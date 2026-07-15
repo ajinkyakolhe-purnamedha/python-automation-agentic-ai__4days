@@ -1,0 +1,558 @@
+<title>Module 3 · OOP, Dataclasses &amp; FastAPI — Acuity Day 1</title>
+<style>
+  :root{
+    --bg:#E7EAF1; --bg2:#EFF1F7; --slide:#FFFFFF; --ink:#131A24; --ink-soft:#586477;
+    --line:#E4E8EF; --accent:#3A54D8; --accent2:#0FA9A0; --accent-soft:#EBEEFC; --accent-line:#CBD5F7;
+    --code-bg:#F6F8FC; --code-line:#E6EBF3; --code-head:#EEF2F9;
+    --grid:rgba(58,84,216,.055); --glow:rgba(58,84,216,.10); --glow2:rgba(15,169,160,.08);
+    --sy-com:#8A97A6; --sy-str:#0A7D55; --sy-num:#B87503; --sy-kw:#8250DF; --sy-con:#0550AE; --sy-bi:#0F63C4;
+    --good:#1E874B; --bad:#C23B47;
+    --shadow:0 30px 70px -26px rgba(19,26,36,.32), 0 4px 14px -6px rgba(19,26,36,.16);
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","Menlo","Cascadia Code","Roboto Mono",monospace;
+    --grad:linear-gradient(102deg,var(--accent) 0%,var(--accent2) 118%);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#080B11; --bg2:#0E131B; --slide:#151C26; --ink:#EAEEF5; --ink-soft:#98A6B8;
+      --line:#26313F; --accent:#8098FF; --accent2:#3FD6C8; --accent-soft:#1B2540; --accent-line:#2E3C64;
+      --code-bg:#0E141D; --code-line:#232F3D; --code-head:#131B26;
+      --grid:rgba(128,152,255,.07); --glow:rgba(128,152,255,.14); --glow2:rgba(63,214,200,.10);
+      --sy-com:#5E6B7A; --sy-str:#7EE0A8; --sy-num:#F0B37E; --sy-kw:#C792EA; --sy-con:#79B8FF; --sy-bi:#8AC7FF;
+      --good:#57C98B; --bad:#F0808C;
+      --shadow:0 34px 80px -26px rgba(0,0,0,.75), 0 4px 14px -6px rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#E7EAF1; --bg2:#EFF1F7; --slide:#FFFFFF; --ink:#131A24; --ink-soft:#586477;
+    --line:#E4E8EF; --accent:#3A54D8; --accent2:#0FA9A0; --accent-soft:#EBEEFC; --accent-line:#CBD5F7;
+    --code-bg:#F6F8FC; --code-line:#E6EBF3; --code-head:#EEF2F9;
+    --grid:rgba(58,84,216,.055); --glow:rgba(58,84,216,.10); --glow2:rgba(15,169,160,.08);
+    --sy-com:#8A97A6; --sy-str:#0A7D55; --sy-num:#B87503; --sy-kw:#8250DF; --sy-con:#0550AE; --sy-bi:#0F63C4;
+    --good:#1E874B; --bad:#C23B47;
+    --shadow:0 30px 70px -26px rgba(19,26,36,.32), 0 4px 14px -6px rgba(19,26,36,.16);
+  }
+  :root[data-theme="dark"]{
+    --bg:#080B11; --bg2:#0E131B; --slide:#151C26; --ink:#EAEEF5; --ink-soft:#98A6B8;
+    --line:#26313F; --accent:#8098FF; --accent2:#3FD6C8; --accent-soft:#1B2540; --accent-line:#2E3C64;
+    --code-bg:#0E141D; --code-line:#232F3D; --code-head:#131B26;
+    --grid:rgba(128,152,255,.07); --glow:rgba(128,152,255,.14); --glow2:rgba(63,214,200,.10);
+    --sy-com:#5E6B7A; --sy-str:#7EE0A8; --sy-num:#F0B37E; --sy-kw:#C792EA; --sy-con:#79B8FF; --sy-bi:#8AC7FF;
+    --good:#57C98B; --bad:#F0808C;
+    --shadow:0 34px 80px -26px rgba(0,0,0,.75), 0 4px 14px -6px rgba(0,0,0,.55);
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;color:var(--ink);font-family:var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased;
+       background:
+         radial-gradient(60% 55% at 12% 8%, var(--glow) 0%, transparent 60%),
+         radial-gradient(55% 50% at 92% 96%, var(--glow2) 0%, transparent 60%),
+         linear-gradient(160deg,var(--bg) 0%,var(--bg2) 100%);}
+
+  /* ---- scaled stage ---- */
+  #viewport{position:fixed;inset:0}
+  .stage{position:absolute;top:50%;left:50%;width:1280px;height:720px;transform-origin:center center}
+  .slide{position:absolute;inset:0;background:var(--slide);border:1px solid var(--line);border-radius:18px;
+         box-shadow:var(--shadow);padding:60px 68px 56px;display:none;flex-direction:column;overflow:hidden}
+  .slide.active{display:flex}
+  /* textured backdrop + accent top-rail on every slide */
+  .slide::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:34px 34px;-webkit-mask-image:radial-gradient(80% 70% at 80% 0%,#000 0%,transparent 72%);
+            mask-image:radial-gradient(80% 70% at 80% 0%,#000 0%,transparent 72%);opacity:.9}
+  .slide::after{content:"";position:absolute;top:0;left:0;right:0;height:5px;border-radius:18px 18px 0 0;
+    background:var(--grad);z-index:2;opacity:.95}
+  .slide > *{position:relative;z-index:1}
+
+  @media (prefers-reduced-motion:no-preference){
+    .slide.active > *:not(.prog):not(.foot){animation:rise .5s both cubic-bezier(.2,.72,.2,1)}
+    .slide.active > *:nth-child(1){animation-delay:.03s}
+    .slide.active > *:nth-child(2){animation-delay:.09s}
+    .slide.active > *:nth-child(3){animation-delay:.15s}
+    .slide.active > *:nth-child(4){animation-delay:.21s}
+    .slide.active > *:nth-child(5){animation-delay:.27s}
+    .slide.active > *:nth-child(6){animation-delay:.33s}
+    @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  }
+
+  /* progress + footer chrome */
+  .prog{position:absolute;top:0;left:0;height:5px;background:var(--grad);border-radius:18px 0 0 0;
+        z-index:3;box-shadow:0 0 12px var(--glow);transition:width .4s cubic-bezier(.4,.7,.2,1)}
+  .foot{position:absolute;left:68px;right:68px;bottom:22px;display:flex;justify-content:space-between;align-items:center;
+        font-size:12.5px;color:var(--ink-soft);font-family:var(--mono);letter-spacing:.05em;z-index:2}
+  .foot .brand{display:flex;align-items:center;gap:9px}
+  .foot .dot{width:7px;height:7px;border-radius:2px;background:var(--grad);transform:rotate(45deg)}
+
+  /* type primitives */
+  .eyebrow{display:inline-flex;align-items:center;gap:11px;font-family:var(--mono);font-size:13.5px;letter-spacing:.17em;
+           text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 0 22px}
+  .eyebrow::before{content:"";width:22px;height:2px;border-radius:2px;background:var(--grad)}
+  h1.h{font-size:41px;line-height:1.1;font-weight:800;letter-spacing:-.022em;margin:0 0 18px;text-wrap:balance;position:relative;padding-bottom:14px}
+  h1.h::after{content:"";position:absolute;left:0;bottom:0;width:56px;height:4px;border-radius:3px;background:var(--grad)}
+  .lead{font-size:22px;line-height:1.5;color:var(--ink);margin:0 0 24px;max-width:60ch;font-weight:400}
+  .lead.soft{color:var(--ink-soft)}
+  strong{font-weight:700}
+  .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .num{color:var(--good)} .no{color:var(--bad)}
+  code.inl{font-family:var(--mono);font-size:.88em;background:var(--accent-soft);color:var(--accent);
+           padding:.1em .4em;border-radius:6px;font-weight:600;white-space:nowrap;border:1px solid var(--accent-line)}
+
+  /* code block — window with header */
+  pre.code{margin:0;background:var(--code-bg);border:1px solid var(--code-line);border-radius:13px;
+           padding:44px 26px 22px;overflow-x:auto;position:relative;
+           box-shadow:0 18px 40px -24px rgba(19,26,36,.4), inset 0 1px 0 rgba(255,255,255,.35)}
+  pre.code::before{content:"";position:absolute;top:0;left:0;right:0;height:34px;background:var(--code-head);
+           border-bottom:1px solid var(--code-line);border-radius:13px 13px 0 0}
+  pre.code::after{content:"● python";position:absolute;top:9px;left:16px;font-family:var(--mono);font-size:12px;
+           letter-spacing:.06em;color:var(--ink-soft);font-weight:600;z-index:1}
+  pre.code[data-lang="bash"]::after{content:"● bash"}
+  pre.code code{font-family:var(--mono);font-size:20px;line-height:1.62;color:var(--ink);display:block;white-space:pre;position:relative;z-index:1}
+  .t-com{color:var(--sy-com);font-style:italic} .t-str{color:var(--sy-str)} .t-num{color:var(--sy-num)}
+  .t-kw{color:var(--sy-kw);font-weight:600} .t-con{color:var(--sy-con);font-weight:600} .t-bi{color:var(--sy-bi)}
+
+  .along{margin-top:auto;display:flex;align-items:center;gap:15px;
+         background:linear-gradient(100deg,var(--accent-soft),transparent 90%);
+         border:1px solid var(--accent-line);border-radius:12px;padding:15px 20px;font-size:17px;color:var(--ink);
+         box-shadow:0 10px 30px -20px var(--glow)}
+  .along .play{flex:none;width:34px;height:34px;border-radius:9px;background:var(--grad);color:#fff;
+         display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;box-shadow:0 6px 16px -6px var(--glow)}
+  .along code{font-family:var(--mono);font-size:.92em;color:var(--accent);font-weight:600}
+  .along b{font-weight:700}
+
+  /* pipeline steps as chips/cards */
+  .steps{display:flex;flex-direction:column;gap:13px;margin:2px 0 24px}
+  .step{display:flex;gap:16px;align-items:center;font-size:20px;line-height:1.35;background:var(--code-bg);
+        border:1px solid var(--code-line);border-radius:12px;padding:14px 18px}
+  .step .k{font-family:var(--mono);font-size:13px;font-weight:700;color:#fff;background:var(--grad);
+           padding:5px 11px;border-radius:7px;white-space:nowrap;letter-spacing:.04em}
+  .step b{font-weight:700}
+
+  /* generic list */
+  ul.clean{list-style:none;margin:0 0 22px;padding:0;display:flex;flex-direction:column;gap:14px}
+  ul.clean li{font-size:21px;line-height:1.45;padding-left:30px;position:relative;color:var(--ink)}
+  ul.clean li::before{content:"";position:absolute;left:0;top:.48em;width:11px;height:11px;border-radius:3px;
+           background:var(--grad);transform:rotate(45deg);box-shadow:0 3px 8px -3px var(--glow)}
+  ul.clean li b{font-weight:700}
+
+  /* week map */
+  pre.map{margin:0;background:var(--code-bg);border:1px solid var(--code-line);border-radius:13px;padding:26px 30px;
+          font-family:var(--mono);font-size:20px;line-height:1.85;color:var(--ink);overflow-x:auto;
+          box-shadow:0 18px 40px -26px rgba(19,26,36,.4)}
+  pre.map b{color:var(--accent);font-weight:700}
+
+  /* moves table as rows */
+  table.moves{border-collapse:separate;border-spacing:0 0;width:100%;font-size:20px}
+  table.moves td{padding:15px 16px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.moves tr:last-child td{border-bottom:none}
+  table.moves td.tool{font-family:var(--mono);color:var(--accent);white-space:nowrap;width:46%;font-weight:600}
+  table.moves td.tool .no{color:var(--bad)}
+
+  .grow{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center}
+
+  /* ---- title slide ---- */
+  .slide.title{justify-content:center;padding:60px 76px}
+  .slide.title::before{-webkit-mask-image:radial-gradient(90% 90% at 85% 12%,#000,transparent 72%);
+            mask-image:radial-gradient(90% 90% at 85% 12%,#000,transparent 72%);opacity:1}
+  .tglow{position:absolute;width:620px;height:620px;right:-120px;top:-160px;border-radius:50%;z-index:0;
+         background:radial-gradient(circle,var(--glow) 0%,transparent 62%);pointer-events:none}
+  .kicker{display:inline-flex;align-items:center;gap:12px;font-family:var(--mono);font-size:14px;letter-spacing:.24em;
+          text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 0 22px}
+  .kicker::before{content:"";width:30px;height:2px;background:var(--grad);border-radius:2px}
+  .slide.title h1{font-size:92px;line-height:.94;font-weight:800;letter-spacing:-.035em;margin:0 0 14px}
+  .slide.title h2{font-size:38px;font-weight:500;color:var(--ink-soft);margin:0;letter-spacing:-.012em;max-width:22ch;line-height:1.15}
+  .slide.title h2 b{color:var(--ink);font-weight:800}
+  .metaline{margin-top:38px;display:inline-flex;align-items:center;gap:14px;font-family:var(--mono);font-size:17px;
+            color:var(--ink-soft);letter-spacing:.02em;background:var(--code-bg);border:1px solid var(--code-line);
+            padding:12px 20px;border-radius:11px}
+  .metaline b{color:var(--accent);font-weight:700}
+
+  /* ---- section divider ---- */
+  .slide.section{justify-content:center;overflow:hidden}
+  .ghost{position:absolute;right:-30px;bottom:-140px;font-size:520px;font-weight:800;line-height:.7;z-index:0;
+          letter-spacing:-.05em;font-variant-numeric:tabular-nums;color:transparent;
+          -webkit-text-stroke:2px var(--accent-line);opacity:.55;pointer-events:none;user-select:none}
+  .secrow{display:flex;align-items:center;gap:34px}
+  .secnum{font-size:132px;font-weight:800;line-height:.8;letter-spacing:-.04em;font-variant-numeric:tabular-nums;
+          background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;
+          flex:none;filter:drop-shadow(0 12px 24px var(--glow))}
+  .secdiv{width:2px;align-self:stretch;background:var(--grad);border-radius:2px;opacity:.5;margin:6px 0}
+  .secmeta .eyebrow{margin-bottom:14px}
+  .secmeta h1{font-size:58px;font-weight:800;letter-spacing:-.028em;margin:0;line-height:1.02}
+  .secmeta .sub{margin-top:20px;font-size:19px;color:var(--ink-soft);font-family:var(--mono);letter-spacing:.02em;max-width:52ch;line-height:1.7}
+  .secmeta .sub b{color:var(--ink)}
+
+  /* ---- lab slide ---- */
+  .slide.lab::before{opacity:1;-webkit-mask-image:radial-gradient(90% 80% at 12% 6%,#000,transparent 70%);
+            mask-image:radial-gradient(90% 80% at 12% 6%,#000,transparent 70%)}
+  .labtag{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:14px;font-weight:700;
+          color:#fff;letter-spacing:.08em;background:var(--grad);padding:8px 16px;border-radius:999px;margin:0 0 22px;
+          box-shadow:0 10px 24px -10px var(--glow)}
+  .slide.lab h1{font-size:48px;font-weight:800;letter-spacing:-.022em;margin:0 0 12px}
+  .endstate{margin-top:auto;background:var(--code-bg);border:1px solid var(--code-line);border-left:4px solid var(--accent);
+            border-radius:12px;padding:17px 22px;font-family:var(--mono);font-size:18px;color:var(--ink);
+            box-shadow:0 14px 34px -22px rgba(19,26,36,.4)}
+  .endstate b{color:var(--good);font-weight:700}
+
+  /* ---- off-stage nav chrome ---- */
+  .nav{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:6px;z-index:20;
+       background:var(--slide);border:1px solid var(--line);border-radius:14px;padding:6px;
+       box-shadow:0 12px 30px -12px rgba(0,0,0,.4)}
+  .nav button{font-family:var(--mono);font-size:15px;border:none;background:transparent;color:var(--ink);
+              width:38px;height:38px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+              transition:background .14s,color .14s}
+  .nav button:hover{background:var(--accent-soft);color:var(--accent)}
+  .nav button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .nav .count{font-family:var(--mono);font-size:13.5px;color:var(--ink-soft);min-width:66px;text-align:center;font-variant-numeric:tabular-nums}
+  .hint{position:fixed;bottom:22px;right:20px;font-family:var(--mono);font-size:12px;color:var(--ink-soft);opacity:.55;z-index:20}
+</style>
+
+<div id="viewport">
+  <div class="stage">
+
+    <section class="slide title active">
+      <span class="tglow"></span>
+      <p class="kicker">Acuity · Day 1 · Module 3</p>
+      <h1>OOP, Dataclasses<br>&amp; <span class="grad">FastAPI</span></h1>
+      <h2>Wrap data and behavior into one object — then serve it over HTTP</h2>
+      <p class="metaline"><b>4 sections</b> · ~40 min · Lab 3</p>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">From a dict to a class</p>
+      <h1 class="h">Fields <em>and</em> behavior, in one typed object</h1>
+      <p class="lead">Module 2 left an account as a <code class="inl">dict</code> + loose <code class="inl">insert/update/fetch</code> functions — and a <strong>mixed-value dict that was hard to type</strong>. The fix: a <strong>class</strong>.</p>
+<pre class="code"><code class="py">acct = {"id": 1, "owner": "Ada", "balance": 1500.0}   # M2: a bare dict
+ada  = BankAccount(1, "Ada", 1500.0)                  # M3: an object with methods</code></pre>
+      <p class="lead soft">Build the class by hand → shortcut with <code class="inl">@dataclass</code> → specialize with inheritance → expose over HTTP.</p>
+    </section>
+
+    <section class="slide section">
+      <span class="ghost">1</span>
+      <div class="secrow">
+        <div class="secnum">1</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>OOP — the class by hand</h1>
+          <div class="sub">why → class / __init__ / self → attributes → methods</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">1.1 · Why a class</p>
+      <h1 class="h">A dict has data but no guardrails</h1>
+      <p class="lead">Nothing stops <code class="inl">balance = -50</code> or a typo'd key. A <strong>class</strong> bundles the data <em>and</em> the operations that protect it.</p>
+<pre class="code"><code class="py">acct = {"owner": "Ada", "balance": 1500.0}   # data only — deposit/withdraw live elsewhere</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">1.2 · class + __init__ + self</p>
+      <h1 class="h">Blueprint → object</h1>
+      <p class="lead">A <strong>class</strong> is a blueprint; an <strong>object</strong> is one thing built from it. <code class="inl">__init__</code> runs once and sets up its data. <code class="inl">self</code> is <em>that</em> object.</p>
+<pre class="code"><code class="py">class BankAccount:
+    def __init__(self, id, owner, balance):
+        self.id = id; self.owner = owner; self.balance = balance
+
+ada = BankAccount(1, "Ada", 1500.0)   # __init__ runs, returns the object</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">1.3 · Attributes</p>
+      <h1 class="h">The data on an object</h1>
+      <p class="lead">Per-object data set in <code class="inl">__init__</code>. Read/write with a <strong>dot</strong> — a typo is an <em>error</em>, not a silent <code class="inl">None</code>.</p>
+<pre class="code"><code class="py">ada.balance          # 1500.0   (vs d["balance"])
+ada.owner = "Ada K." # set with the dot too</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">1.4 · Methods</p>
+      <h1 class="h">Behavior, with guardrails</h1>
+      <p class="lead">A <strong>method</strong> is a function inside the class; its first parameter is <code class="inl">self</code>. A method can <code class="inl">raise</code> to enforce a rule, so the data can't go invalid.</p>
+<pre class="code"><code class="py">class BankAccount:
+    ...
+    def withdraw(self, amount):
+        if amount &gt; self.balance:
+            raise ValueError("insufficient funds")   # the rule lives with the data
+        self.balance -= amount</code></pre>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 1</b> — build BankAccount: __init__, attributes, a method with a guardrail</div></div>
+    </section>
+
+    <section class="slide section">
+      <span class="ghost">2</span>
+      <div class="secrow">
+        <div class="secnum">2</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>@dataclass — the clean record</h1>
+          <div class="sub">boilerplate → @dataclass → the data-structure step → defaults → methods</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">2.1 · That's a lot of boilerplate</p>
+      <h1 class="h">Six fields, written by hand</h1>
+      <p class="lead">Writing <code class="inl">__init__</code> (plus a readable print, plus <code class="inl">==</code>) <strong>by hand</strong> for every field is tedious and easy to get wrong.</p>
+<pre class="code"><code class="py">def __init__(self, id, owner, account_type, balance, is_active, tags):
+    self.id = id; self.owner = owner; ...   # ...repeat for every field</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">2.2 · @dataclass — boilerplate for free</p>
+      <h1 class="h">Just list the typed fields</h1>
+      <p class="lead">Put <code class="inl">@dataclass</code> on top. You get <code class="inl">__init__</code>, a readable <code class="inl">__repr__</code>, and <code class="inl">__eq__</code> (<code class="inl">==</code> by value) — written for you.</p>
+<pre class="code"><code class="py">@dataclass
+class BankAccount:
+    id: int; owner: str; balance: float
+
+print(BankAccount(1, "Ada", 1500.0))   # BankAccount(id=1, owner='Ada', balance=1500.0)</code></pre>
+      <div class="along"><span class="play">@</span><div>The <code>@</code> is a <b>decorator</b> — it hands your class to a framework. In this course you <b>use</b> decorators; you never write your own.</div></div>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">2.3 · The next data structure</p>
+      <h1 class="h">variable → list &amp; dict → dataclass</h1>
+      <p class="lead">The progression: <strong>variable</strong> (M1) → <strong>list &amp; dict</strong> (M2) → <strong>dataclass</strong> (M3) — a typed, fixed-shape record. Exactly the fix for M2's untypeable mixed-value dict.</p>
+<pre class="code"><code class="py">@dataclass
+class BankAccount:
+    id: int
+    owner: str
+    balance: float        # each field named AND typed — no more dict[str, object]</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">2.4 · Defaults &amp; the tags field</p>
+      <h1 class="h">Mutable defaults need a factory</h1>
+      <p class="lead">Give a field a default after the typed ones. For a <strong>mutable</strong> default (a list), use <code class="inl">field(default_factory=list)</code> — never <code class="inl">tags: list = []</code> (the M1 trap).</p>
+<pre class="code"><code class="py">@dataclass
+class BankAccount:
+    id: int; owner: str; balance: float
+    is_active: bool = True
+    tags: list[str] = field(default_factory=list)</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">2.5 · Behavior still lives on it</p>
+      <h1 class="h">Clean data and behavior, together</h1>
+      <p class="lead">A dataclass is still a class — your methods sit right alongside the fields.</p>
+<pre class="code"><code class="py">@dataclass
+class BankAccount:
+    id: int; owner: str; balance: float = 0.0
+    def withdraw(self, amount):
+        if amount &gt; self.balance: raise ValueError("insufficient funds")
+        self.balance -= amount</code></pre>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 2</b> — migrate BankAccount to @dataclass: fields, defaults, keep the methods</div></div>
+    </section>
+
+    <section class="slide section">
+      <span class="ghost">3</span>
+      <div class="secrow">
+        <div class="secnum">3</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>Inheritance</h1>
+          <div class="sub">is-a → inherit → override + super() → Pydantic</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">3.1 · Why inherit — <em>is-a</em></p>
+      <h1 class="h">Reuse everything, change the difference</h1>
+      <p class="lead">A <code class="inl">SavingsAccount</code> <strong>is a</strong> <code class="inl">BankAccount</code> that also earns interest. Inheritance reuses everything the parent has and adds just the difference.</p>
+<pre class="code"><code class="py">@dataclass
+class SavingsAccount(BankAccount):
+    rate: float = 0.04        # plus everything BankAccount already has</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">3.2 · A subclass inherits everything</p>
+      <h1 class="h">Fields and methods, for free</h1>
+      <p class="lead"><code class="inl">SavingsAccount(BankAccount)</code> gets the parent's fields <strong>and</strong> methods — <code class="inl">withdraw</code>, <code class="inl">balance</code>, all of it — without rewriting them.</p>
+<pre class="code"><code class="py">s = SavingsAccount(1, "Ada", 1500.0)
+s.withdraw(100)        # BankAccount's method, inherited as-is</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">3.3 · Override + super()</p>
+      <h1 class="h">Specialize, then reuse the parent</h1>
+      <p class="lead">Redefine a method to <strong>specialize</strong> it; call <code class="inl">super().&lt;method&gt;()</code> to reuse the parent's logic and add to it.</p>
+<pre class="code"><code class="py">class SavingsAccount(BankAccount):
+    def withdraw(self, amount):
+        super().withdraw(amount)   # reuse the parent's guardrail
+        self.balance -= 1          # then apply a savings withdrawal fee</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">3.4 · You'll see this again — Pydantic</p>
+      <h1 class="h">The same is-a, plus validation</h1>
+      <p class="lead">Day 2's models are classes that <strong>inherit</strong> from Pydantic's <code class="inl">BaseModel</code> — same <code class="inl">is-a</code> mechanism, plus runtime validation.</p>
+<pre class="code"><code class="py">class Product(BaseModel):   # is-a BaseModel → gets validation for free
+    id: int
+    name: str</code></pre>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 3</b> — SavingsAccount(BankAccount): inherit, override withdraw with super()</div></div>
+    </section>
+
+    <section class="slide section">
+      <span class="ghost">4</span>
+      <div class="secrow">
+        <div class="secnum">4</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>FastAPI — expose the catalog</h1>
+          <div class="sub">route = @app.get fn → build → run → where it goes</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">4.1 · A route is a function with @app.get</p>
+      <h1 class="h">Put the decorator on top</h1>
+      <p class="lead">FastAPI turns a function into a web endpoint: put <code class="inl">@app.get("/path")</code> above it, and it runs when a request hits that path.</p>
+<pre class="code"><code class="py">app = FastAPI()
+
+@app.get("/accounts")
+def list_accounts():
+    return ACCOUNTS</code></pre>
+      <div class="along"><span class="play">@</span><div>That <code>@</code> is a decorator again — same idea as <code>@dataclass</code>. You'll meet it twice more: <code>@pytest.fixture</code> (Day 3), <code>@agent.tool</code> (Day 4).</div></div>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">4.2 · Build the server — GET &amp; POST</p>
+      <h1 class="h">One function per route</h1>
+      <p class="lead">Return your objects and FastAPI serialises them to JSON; take a <strong>path parameter</strong> to fetch one.</p>
+<pre class="code"><code class="py">@app.get("/accounts/{id}")
+def get_account(id: int):
+    return fetch(STORE, id)
+
+@app.post("/accounts")
+def create(acct: dict):
+    insert(STORE, acct); return acct</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">4.3 · Run it — uvicorn + /docs</p>
+      <h1 class="h">Interactive docs, for free</h1>
+      <p class="lead">Start the server, then hit it from a browser or curl. This is the <strong>end-of-Day-1 artifact</strong>: a running API serving a catalog you built.</p>
+<pre class="code" data-lang="bash"><code class="py">uvicorn catalog.server:app --reload
+curl localhost:8000/accounts/1
+# then open http://localhost:8000/docs</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">4.4 · Where this goes</p>
+      <h1 class="h">Tools are just registered functions</h1>
+      <p class="lead">The same "register a function" shape returns on <strong>Day 4</strong>: an agent's <strong>tools</strong> are just functions the LLM is allowed to call — exactly like routes.</p>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 4</b> — a FastAPI app over the accounts: GET, POST, run it</div></div>
+    </section>
+
+    <section class="slide lab">
+      <span class="labtag">🧪 LAB 3 · 80 MIN</span>
+      <h1>Local API Server</h1>
+      <p class="lead">Open <code class="inl">labs/lab-03-local-api-server/README.md</code> · scaffolds in <code class="inl">starter/</code></p>
+      <ul class="clean">
+        <li><code class="inl">catalog/models.py</code> — <code class="inl">Product</code> as a class → <code class="inl">@dataclass</code></li>
+        <li><code class="inl">catalog/server.py</code> — FastAPI: <code class="inl">GET /products</code>, <code class="inl">GET /products/{id}</code>, <code class="inl">POST /products</code></li>
+        <li>a running server on <code class="inl">localhost:8000</code> with <code class="inl">/docs</code></li>
+      </ul>
+      <div class="endstate">End of Day 1 → your repo <b>serves a real catalog API</b>.</div>
+    </section>
+
+    <!-- chrome injected per-slide by JS: progress + footer -->
+  </div>
+</div>
+
+<div class="nav">
+  <button id="prev" aria-label="Previous slide">◀</button>
+  <span class="count" id="count">1 / 30</span>
+  <button id="next" aria-label="Next slide">▶</button>
+</div>
+<div class="hint">← → to navigate</div>
+
+<script>
+(function(){
+  "use strict";
+  const stage = document.querySelector('.stage');
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const N = slides.length;
+  const countEl = document.getElementById('count');
+
+  // add progress bar + footer to each slide
+  slides.forEach((s, k)=>{
+    const p = document.createElement('div'); p.className='prog';
+    const f = document.createElement('div'); f.className='foot';
+    f.innerHTML = '<span class="brand"><span class="dot"></span>Acuity · Day 1 · Module 3 — OOP, Dataclasses &amp; FastAPI</span>'
+                + '<span>'+String(k+1).padStart(2,'0')+' / '+String(N).padStart(2,'0')+'</span>';
+    s.appendChild(p); s.appendChild(f);
+    p.style.width = ((k+1)/N*100)+'%';
+  });
+
+  // ---- fit stage to viewport ----
+  function fit(){
+    const pad = 24;
+    const s = Math.min((window.innerWidth-pad*2)/1280, (window.innerHeight-pad*2-40)/720);
+    stage.style.transform = 'translate(-50%,-50%) scale('+s+')';
+  }
+  window.addEventListener('resize', fit); fit();
+
+  // ---- navigation ----
+  let i = 0;
+  function show(n){
+    i = Math.max(0, Math.min(N-1, n));
+    slides.forEach((s,k)=>s.classList.toggle('active', k===i));
+    countEl.textContent = (i+1)+' / '+N;
+    location.hash = i+1;
+  }
+  function next(){ show(i+1); }
+  function prev(){ show(i-1); }
+
+  document.getElementById('next').addEventListener('click', next);
+  document.getElementById('prev').addEventListener('click', prev);
+  window.addEventListener('keydown', e=>{
+    if(['ArrowRight','PageDown',' '].includes(e.key)){ e.preventDefault(); next(); }
+    else if(['ArrowLeft','PageUp'].includes(e.key)){ e.preventDefault(); prev(); }
+    else if(e.key==='Home'){ e.preventDefault(); show(0); }
+    else if(e.key==='End'){ e.preventDefault(); show(N-1); }
+  });
+  const start = parseInt(location.hash.replace('#',''),10);
+  if(start>=1 && start<=N) i = start-1;
+
+  // ---- minimal Python syntax highlighter (self-contained, CSP-safe) ----
+  const KW = new Set(['def','return','if','elif','else','for','while','in','not','and','or',
+    'import','from','as','try','except','finally','raise','with','class','lambda','pass',
+    'break','continue','is','yield','global','nonlocal','assert','del','await','async']);
+  const CON = new Set(['True','False','None']);
+  const BI = new Set(['print','type','len','sum','range','enumerate','isinstance','open','list',
+    'dict','set','tuple','int','float','str','bool','round','dir','sorted','map','filter','zip',
+    'LookupError','ValueError','KeyError','TypeError']);
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const TOK = /(#.*$)|((?:[fFrRbB]{0,2})(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'))|(\b\d+\.?\d*\b)|([A-Za-z_]\w*)/gm;
+
+  document.querySelectorAll('pre.code code').forEach(block=>{
+    const src = block.textContent;
+    let out='', last=0, m;
+    TOK.lastIndex = 0;
+    while((m = TOK.exec(src))){
+      out += esc(src.slice(last, m.index));
+      if(m[1])       out += '<span class="t-com">'+esc(m[1])+'</span>';
+      else if(m[2])  out += '<span class="t-str">'+esc(m[2])+'</span>';
+      else if(m[3])  out += '<span class="t-num">'+esc(m[3])+'</span>';
+      else if(m[4]){
+        const w = m[4];
+        const cls = KW.has(w)?'t-kw':CON.has(w)?'t-con':BI.has(w)?'t-bi':null;
+        out += cls ? '<span class="'+cls+'">'+esc(w)+'</span>' : esc(w);
+      }
+      last = m.index + m[0].length;
+    }
+    out += esc(src.slice(last));
+    block.innerHTML = out;
+  });
+
+  show(i);
+})();
+</script>

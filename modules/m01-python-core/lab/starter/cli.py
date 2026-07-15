@@ -1,7 +1,8 @@
-"""Tiny argparse CLI for the catalog — Day 1 Lab 1.
+"""Tiny CLI for the catalog — Day 1 Lab 1.
 
-The argparse plumbing is given (boilerplate, not the lesson). Fill the command
-bodies marked `# TODO`. `search` / `save` / `load` arrive in Lab 2.
+The whole CLI is **given** — argparse plumbing and the `list` command are
+boilerplate, not the lesson. Once your `models.py` functions work, this runs
+as-is. (Lab 2 adds `search` / `save` / `load`.)
 
 Run:  python -m catalog.cli list
 """
@@ -31,33 +32,19 @@ def seed_catalog():
 
 
 def cmd_list(args):
+    """Print each product as a row, then a total footer."""
     catalog = seed_catalog()
-    # TODO: print each product as one row, then a "<n> products" footer
-    ...
-    return 0
-
-
-def cmd_add(args):
-    catalog = seed_catalog()
-    # TODO: make_product(...) from args + add_product(...);
-    #       on ValueError print "ERROR: ..." to stderr and return 1
-    ...
+    for p in list_products(catalog):
+        stock = "in stock" if p["in_stock"] else "OOS"
+        print(f"{p['id']:>3}  {p['name']:<22} {p['category']:<12} ₹{p['price']:>8.2f}  {stock}")
+    print(f"\n{len(catalog)} products")
     return 0
 
 
 def build_parser():
     parser = argparse.ArgumentParser(prog="catalog")
     sub = parser.add_subparsers(dest="cmd", required=True)
-
     sub.add_parser("list").set_defaults(fn=cmd_list)
-
-    p_add = sub.add_parser("add")
-    p_add.add_argument("id", type=int)
-    p_add.add_argument("name")
-    p_add.add_argument("category")
-    p_add.add_argument("price", type=float)
-    p_add.set_defaults(fn=cmd_add)
-
     return parser
 
 

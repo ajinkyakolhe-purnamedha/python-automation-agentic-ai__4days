@@ -1,0 +1,572 @@
+<title>Module 2 · Lists, Dicts &amp; Files — Acuity Day 1</title>
+<style>
+  :root{
+    --bg:#E7EAF1; --bg2:#EFF1F7; --slide:#FFFFFF; --ink:#131A24; --ink-soft:#586477;
+    --line:#E4E8EF; --accent:#3A54D8; --accent2:#0FA9A0; --accent-soft:#EBEEFC; --accent-line:#CBD5F7;
+    --code-bg:#F6F8FC; --code-line:#E6EBF3; --code-head:#EEF2F9;
+    --grid:rgba(58,84,216,.055); --glow:rgba(58,84,216,.10); --glow2:rgba(15,169,160,.08);
+    --sy-com:#8A97A6; --sy-str:#0A7D55; --sy-num:#B87503; --sy-kw:#8250DF; --sy-con:#0550AE; --sy-bi:#0F63C4;
+    --good:#1E874B; --bad:#C23B47;
+    --shadow:0 30px 70px -26px rgba(19,26,36,.32), 0 4px 14px -6px rgba(19,26,36,.16);
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","Menlo","Cascadia Code","Roboto Mono",monospace;
+    --grad:linear-gradient(102deg,var(--accent) 0%,var(--accent2) 118%);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#080B11; --bg2:#0E131B; --slide:#151C26; --ink:#EAEEF5; --ink-soft:#98A6B8;
+      --line:#26313F; --accent:#8098FF; --accent2:#3FD6C8; --accent-soft:#1B2540; --accent-line:#2E3C64;
+      --code-bg:#0E141D; --code-line:#232F3D; --code-head:#131B26;
+      --grid:rgba(128,152,255,.07); --glow:rgba(128,152,255,.14); --glow2:rgba(63,214,200,.10);
+      --sy-com:#5E6B7A; --sy-str:#7EE0A8; --sy-num:#F0B37E; --sy-kw:#C792EA; --sy-con:#79B8FF; --sy-bi:#8AC7FF;
+      --good:#57C98B; --bad:#F0808C;
+      --shadow:0 34px 80px -26px rgba(0,0,0,.75), 0 4px 14px -6px rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#E7EAF1; --bg2:#EFF1F7; --slide:#FFFFFF; --ink:#131A24; --ink-soft:#586477;
+    --line:#E4E8EF; --accent:#3A54D8; --accent2:#0FA9A0; --accent-soft:#EBEEFC; --accent-line:#CBD5F7;
+    --code-bg:#F6F8FC; --code-line:#E6EBF3; --code-head:#EEF2F9;
+    --grid:rgba(58,84,216,.055); --glow:rgba(58,84,216,.10); --glow2:rgba(15,169,160,.08);
+    --sy-com:#8A97A6; --sy-str:#0A7D55; --sy-num:#B87503; --sy-kw:#8250DF; --sy-con:#0550AE; --sy-bi:#0F63C4;
+    --good:#1E874B; --bad:#C23B47;
+    --shadow:0 30px 70px -26px rgba(19,26,36,.32), 0 4px 14px -6px rgba(19,26,36,.16);
+  }
+  :root[data-theme="dark"]{
+    --bg:#080B11; --bg2:#0E131B; --slide:#151C26; --ink:#EAEEF5; --ink-soft:#98A6B8;
+    --line:#26313F; --accent:#8098FF; --accent2:#3FD6C8; --accent-soft:#1B2540; --accent-line:#2E3C64;
+    --code-bg:#0E141D; --code-line:#232F3D; --code-head:#131B26;
+    --grid:rgba(128,152,255,.07); --glow:rgba(128,152,255,.14); --glow2:rgba(63,214,200,.10);
+    --sy-com:#5E6B7A; --sy-str:#7EE0A8; --sy-num:#F0B37E; --sy-kw:#C792EA; --sy-con:#79B8FF; --sy-bi:#8AC7FF;
+    --good:#57C98B; --bad:#F0808C;
+    --shadow:0 34px 80px -26px rgba(0,0,0,.75), 0 4px 14px -6px rgba(0,0,0,.55);
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;color:var(--ink);font-family:var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased;
+       background:
+         radial-gradient(60% 55% at 12% 8%, var(--glow) 0%, transparent 60%),
+         radial-gradient(55% 50% at 92% 96%, var(--glow2) 0%, transparent 60%),
+         linear-gradient(160deg,var(--bg) 0%,var(--bg2) 100%);}
+
+  /* ---- scaled stage ---- */
+  #viewport{position:fixed;inset:0}
+  .stage{position:absolute;top:50%;left:50%;width:1280px;height:720px;transform-origin:center center}
+  .slide{position:absolute;inset:0;background:var(--slide);border:1px solid var(--line);border-radius:18px;
+         box-shadow:var(--shadow);padding:60px 68px 56px;display:none;flex-direction:column;overflow:hidden}
+  .slide.active{display:flex}
+  /* textured backdrop + accent top-rail on every slide */
+  .slide::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:34px 34px;-webkit-mask-image:radial-gradient(80% 70% at 80% 0%,#000 0%,transparent 72%);
+            mask-image:radial-gradient(80% 70% at 80% 0%,#000 0%,transparent 72%);opacity:.9}
+  .slide::after{content:"";position:absolute;top:0;left:0;right:0;height:5px;border-radius:18px 18px 0 0;
+    background:var(--grad);z-index:2;opacity:.95}
+  .slide > *{position:relative;z-index:1}
+
+  @media (prefers-reduced-motion:no-preference){
+    .slide.active > *:not(.prog):not(.foot){animation:rise .5s both cubic-bezier(.2,.72,.2,1)}
+    .slide.active > *:nth-child(1){animation-delay:.03s}
+    .slide.active > *:nth-child(2){animation-delay:.09s}
+    .slide.active > *:nth-child(3){animation-delay:.15s}
+    .slide.active > *:nth-child(4){animation-delay:.21s}
+    .slide.active > *:nth-child(5){animation-delay:.27s}
+    .slide.active > *:nth-child(6){animation-delay:.33s}
+    @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  }
+
+  /* progress + footer chrome */
+  .prog{position:absolute;top:0;left:0;height:5px;background:var(--grad);border-radius:18px 0 0 0;
+        z-index:3;box-shadow:0 0 12px var(--glow);transition:width .4s cubic-bezier(.4,.7,.2,1)}
+  .foot{position:absolute;left:68px;right:68px;bottom:22px;display:flex;justify-content:space-between;align-items:center;
+        font-size:12.5px;color:var(--ink-soft);font-family:var(--mono);letter-spacing:.05em;z-index:2}
+  .foot .brand{display:flex;align-items:center;gap:9px}
+  .foot .dot{width:7px;height:7px;border-radius:2px;background:var(--grad);transform:rotate(45deg)}
+
+  /* type primitives */
+  .eyebrow{display:inline-flex;align-items:center;gap:11px;font-family:var(--mono);font-size:13.5px;letter-spacing:.17em;
+           text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 0 22px}
+  .eyebrow::before{content:"";width:22px;height:2px;border-radius:2px;background:var(--grad)}
+  h1.h{font-size:41px;line-height:1.1;font-weight:800;letter-spacing:-.022em;margin:0 0 18px;text-wrap:balance;position:relative;padding-bottom:14px}
+  h1.h::after{content:"";position:absolute;left:0;bottom:0;width:56px;height:4px;border-radius:3px;background:var(--grad)}
+  .lead{font-size:22px;line-height:1.5;color:var(--ink);margin:0 0 24px;max-width:60ch;font-weight:400}
+  .lead.soft{color:var(--ink-soft)}
+  strong{font-weight:700}
+  .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .num{color:var(--good)} .no{color:var(--bad)}
+  code.inl{font-family:var(--mono);font-size:.88em;background:var(--accent-soft);color:var(--accent);
+           padding:.1em .4em;border-radius:6px;font-weight:600;white-space:nowrap;border:1px solid var(--accent-line)}
+
+  /* code block — window with header */
+  pre.code{margin:0;background:var(--code-bg);border:1px solid var(--code-line);border-radius:13px;
+           padding:44px 26px 22px;overflow-x:auto;position:relative;
+           box-shadow:0 18px 40px -24px rgba(19,26,36,.4), inset 0 1px 0 rgba(255,255,255,.35)}
+  pre.code::before{content:"";position:absolute;top:0;left:0;right:0;height:34px;background:var(--code-head);
+           border-bottom:1px solid var(--code-line);border-radius:13px 13px 0 0}
+  pre.code::after{content:"● python";position:absolute;top:9px;left:16px;font-family:var(--mono);font-size:12px;
+           letter-spacing:.06em;color:var(--ink-soft);font-weight:600;z-index:1}
+  pre.code[data-lang="bash"]::after{content:"● bash"}
+  pre.code code{font-family:var(--mono);font-size:20px;line-height:1.62;color:var(--ink);display:block;white-space:pre;position:relative;z-index:1}
+  .t-com{color:var(--sy-com);font-style:italic} .t-str{color:var(--sy-str)} .t-num{color:var(--sy-num)}
+  .t-kw{color:var(--sy-kw);font-weight:600} .t-con{color:var(--sy-con);font-weight:600} .t-bi{color:var(--sy-bi)}
+
+  .along{margin-top:auto;display:flex;align-items:center;gap:15px;
+         background:linear-gradient(100deg,var(--accent-soft),transparent 90%);
+         border:1px solid var(--accent-line);border-radius:12px;padding:15px 20px;font-size:17px;color:var(--ink);
+         box-shadow:0 10px 30px -20px var(--glow)}
+  .along .play{flex:none;width:34px;height:34px;border-radius:9px;background:var(--grad);color:#fff;
+         display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;box-shadow:0 6px 16px -6px var(--glow)}
+  .along code{font-family:var(--mono);font-size:.92em;color:var(--accent);font-weight:600}
+  .along b{font-weight:700}
+
+  /* pipeline steps as chips/cards */
+  .steps{display:flex;flex-direction:column;gap:13px;margin:2px 0 24px}
+  .step{display:flex;gap:16px;align-items:center;font-size:20px;line-height:1.35;background:var(--code-bg);
+        border:1px solid var(--code-line);border-radius:12px;padding:14px 18px}
+  .step .k{font-family:var(--mono);font-size:13px;font-weight:700;color:#fff;background:var(--grad);
+           padding:5px 11px;border-radius:7px;white-space:nowrap;letter-spacing:.04em}
+  .step b{font-weight:700}
+
+  /* generic list */
+  ul.clean{list-style:none;margin:0 0 22px;padding:0;display:flex;flex-direction:column;gap:14px}
+  ul.clean li{font-size:21px;line-height:1.45;padding-left:30px;position:relative;color:var(--ink)}
+  ul.clean li::before{content:"";position:absolute;left:0;top:.48em;width:11px;height:11px;border-radius:3px;
+           background:var(--grad);transform:rotate(45deg);box-shadow:0 3px 8px -3px var(--glow)}
+  ul.clean li b{font-weight:700}
+
+  /* week map */
+  pre.map{margin:0;background:var(--code-bg);border:1px solid var(--code-line);border-radius:13px;padding:26px 30px;
+          font-family:var(--mono);font-size:20px;line-height:1.85;color:var(--ink);overflow-x:auto;
+          box-shadow:0 18px 40px -26px rgba(19,26,36,.4)}
+  pre.map b{color:var(--accent);font-weight:700}
+
+  /* moves table as rows */
+  table.moves{border-collapse:separate;border-spacing:0 0;width:100%;font-size:20px}
+  table.moves td{padding:15px 16px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.moves tr:last-child td{border-bottom:none}
+  table.moves td.tool{font-family:var(--mono);color:var(--accent);white-space:nowrap;width:46%;font-weight:600}
+  table.moves td.tool .no{color:var(--bad)}
+
+  .grow{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center}
+
+  /* ---- title slide ---- */
+  .slide.title{justify-content:center;padding:60px 76px}
+  .slide.title::before{-webkit-mask-image:radial-gradient(90% 90% at 85% 12%,#000,transparent 72%);
+            mask-image:radial-gradient(90% 90% at 85% 12%,#000,transparent 72%);opacity:1}
+  .tglow{position:absolute;width:620px;height:620px;right:-120px;top:-160px;border-radius:50%;z-index:0;
+         background:radial-gradient(circle,var(--glow) 0%,transparent 62%);pointer-events:none}
+  .kicker{display:inline-flex;align-items:center;gap:12px;font-family:var(--mono);font-size:14px;letter-spacing:.24em;
+          text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 0 22px}
+  .kicker::before{content:"";width:30px;height:2px;background:var(--grad);border-radius:2px}
+  .slide.title h1{font-size:92px;line-height:.94;font-weight:800;letter-spacing:-.035em;margin:0 0 14px}
+  .slide.title h2{font-size:38px;font-weight:500;color:var(--ink-soft);margin:0;letter-spacing:-.012em;max-width:22ch;line-height:1.15}
+  .slide.title h2 b{color:var(--ink);font-weight:800}
+  .metaline{margin-top:38px;display:inline-flex;align-items:center;gap:14px;font-family:var(--mono);font-size:17px;
+            color:var(--ink-soft);letter-spacing:.02em;background:var(--code-bg);border:1px solid var(--code-line);
+            padding:12px 20px;border-radius:11px}
+  .metaline b{color:var(--accent);font-weight:700}
+
+  /* ---- section divider ---- */
+  .slide.section{justify-content:center;overflow:hidden}
+  .ghost{position:absolute;right:-30px;bottom:-140px;font-size:520px;font-weight:800;line-height:.7;z-index:0;
+          letter-spacing:-.05em;font-variant-numeric:tabular-nums;color:transparent;
+          -webkit-text-stroke:2px var(--accent-line);opacity:.55;pointer-events:none;user-select:none}
+  .secrow{display:flex;align-items:center;gap:34px}
+  .secnum{font-size:132px;font-weight:800;line-height:.8;letter-spacing:-.04em;font-variant-numeric:tabular-nums;
+          background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;
+          flex:none;filter:drop-shadow(0 12px 24px var(--glow))}
+  .secdiv{width:2px;align-self:stretch;background:var(--grad);border-radius:2px;opacity:.5;margin:6px 0}
+  .secmeta .eyebrow{margin-bottom:14px}
+  .secmeta h1{font-size:58px;font-weight:800;letter-spacing:-.028em;margin:0;line-height:1.02}
+  .secmeta .sub{margin-top:20px;font-size:19px;color:var(--ink-soft);font-family:var(--mono);letter-spacing:.02em;max-width:52ch;line-height:1.7}
+  .secmeta .sub b{color:var(--ink)}
+
+  /* ---- lab slide ---- */
+  .slide.lab::before{opacity:1;-webkit-mask-image:radial-gradient(90% 80% at 12% 6%,#000,transparent 70%);
+            mask-image:radial-gradient(90% 80% at 12% 6%,#000,transparent 70%)}
+  .labtag{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:14px;font-weight:700;
+          color:#fff;letter-spacing:.08em;background:var(--grad);padding:8px 16px;border-radius:999px;margin:0 0 22px;
+          box-shadow:0 10px 24px -10px var(--glow)}
+  .slide.lab h1{font-size:48px;font-weight:800;letter-spacing:-.022em;margin:0 0 12px}
+  .endstate{margin-top:auto;background:var(--code-bg);border:1px solid var(--code-line);border-left:4px solid var(--accent);
+            border-radius:12px;padding:17px 22px;font-family:var(--mono);font-size:18px;color:var(--ink);
+            box-shadow:0 14px 34px -22px rgba(19,26,36,.4)}
+  .endstate b{color:var(--good);font-weight:700}
+
+  /* ---- off-stage nav chrome ---- */
+  .nav{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:6px;z-index:20;
+       background:var(--slide);border:1px solid var(--line);border-radius:14px;padding:6px;
+       box-shadow:0 12px 30px -12px rgba(0,0,0,.4)}
+  .nav button{font-family:var(--mono);font-size:15px;border:none;background:transparent;color:var(--ink);
+              width:38px;height:38px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+              transition:background .14s,color .14s}
+  .nav button:hover{background:var(--accent-soft);color:var(--accent)}
+  .nav button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .nav .count{font-family:var(--mono);font-size:13.5px;color:var(--ink-soft);min-width:66px;text-align:center;font-variant-numeric:tabular-nums}
+  .hint{position:fixed;bottom:22px;right:20px;font-family:var(--mono);font-size:12px;color:var(--ink-soft);opacity:.55;z-index:20}
+</style>
+
+<div id="viewport">
+  <div class="stage">
+
+    <section class="slide title active">
+      <span class="tglow"></span>
+      <p class="kicker">Acuity · Day 1 · Module 2</p>
+      <h1><span class="grad">Lists, Dicts</span> &amp; Files</h1>
+      <h2>Many accounts — saved to files that survive a restart</h2>
+      <p class="metaline"><b>4 sections</b> · ~40 min · Lab 2</p>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">From one account to many</p>
+      <h1 class="h">A bank has many — and they must outlive the program</h1>
+      <p class="lead">Module 1 left us with <strong>one</strong> account — a <code class="inl">dict</code>. Today: <strong>many</strong> accounts in the two containers that matter — <code class="inl">list</code> and <code class="inl">dict</code> — saved to <strong>files</strong> (CSV, JSON).</p>
+<pre class="code"><code class="py">acct = {"id": 1, "owner": "Ada", "balance": 1500.0, ...}   # M1: one account, in memory</code></pre>
+      <p class="lead soft">The third, most powerful structure — a <strong>class</strong> — is Module 3.</p>
+    </section>
+
+    <section class="slide section">
+      <span class="ghost">1</span>
+      <div class="secrow">
+        <div class="secnum">1</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>Lists &amp; CSV</h1>
+          <div class="sub">elements → slice → loop → comprehension → CSV → with type hints</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">1.1 · List elements</p>
+      <h1 class="h">A list holds many values in order</h1>
+      <p class="lead">Build it with <code class="inl">[...]</code>; read any item by its <strong>index</strong> (0-based; negatives count from the end).</p>
+<pre class="code"><code class="py">owners = ["Ada", "Lin", "Sam"]
+owners[0]    # "Ada"  (first)
+owners[-1]   # "Sam"  (last)</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">1.2 · Slicing</p>
+      <h1 class="h">A slice returns a sub-list</h1>
+      <p class="lead"><code class="inl">[start:stop]</code> — <code class="inl">stop</code> is excluded. Omit a side to run to the edge.</p>
+<pre class="code"><code class="py">owners[0:2]   # ['Ada', 'Lin']
+owners[1:]    # ['Lin', 'Sam']</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">1.3 · Length &amp; looping</p>
+      <h1 class="h">Count them, then walk them</h1>
+      <p class="lead"><code class="inl">len()</code> counts the items; a <code class="inl">for</code> loop walks them in order.</p>
+<pre class="code"><code class="py">len(owners)            # 3
+for name in owners:
+    print(name)        # Ada / Lin / Sam</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">1.4 · List comprehension</p>
+      <h1 class="h">Build a new list in one line</h1>
+      <p class="lead">Say <em>what</em>, not <em>how</em>. Add an <code class="inl">if</code> to filter.</p>
+<pre class="code"><code class="py">upper = [name.upper() for name in owners]          # transform → ['ADA','LIN','SAM']
+with_a = [n for n in owners if n.startswith("A")]  # filter   → ['Ada']</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">1.5 · A CSV row is a list</p>
+      <h1 class="h">The most common real-world data</h1>
+      <p class="lead">Read a CSV with <code class="inl">csv.reader</code> — <strong>each row comes back as a list</strong> of strings.</p>
+<pre class="code"><code class="py">import csv
+for row in csv.reader(open("accounts.csv")):
+    row    # ['1', 'Ada', '1500.0']  — a list; every value is a str</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">1.6 · Reading a CSV file</p>
+      <h1 class="h">Header is just the first row</h1>
+      <p class="lead">Split it off and loop the rest, or let <code class="inl">DictReader</code> pair each value with its column name.</p>
+<pre class="code"><code class="py">rows = list(csv.reader(open("accounts.csv")))
+header, data = rows[0], rows[1:]        # header row vs the data rows
+# or: csv.DictReader(...) -&gt; each row a dict keyed by header (→ Section 2)</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">1.7 · Now with type hints — best practice</p>
+      <h1 class="h">From here on, annotate them</h1>
+      <p class="lead">A hint on a collection (<code class="inl">list[str]</code>, <code class="inl">list[list[str]]</code>) and on a signature lets tools catch mistakes <em>before</em> you run — for free.</p>
+<pre class="code"><code class="py">owners: list[str] = ["Ada", "Lin", "Sam"]
+rows: list[list[str]] = list(csv.reader(open("accounts.csv")))
+
+def first_n(owners: list[str], n: int) -&gt; list[str]:
+    return owners[:n]</code></pre>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 1</b> — list ops → comprehension → CSV as lists → with type hints</div></div>
+    </section>
+
+    <section class="slide section">
+      <span class="ghost">2</span>
+      <div class="secrow">
+        <div class="secnum">2</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>Dicts &amp; JSON</h1>
+          <div class="sub">access → loop → functions → nested → JSON → with type hints</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">2.1 · Dict element access</p>
+      <h1 class="h">Looked up by key, not position</h1>
+      <p class="lead"><code class="inl">[key]</code> raises if missing; <code class="inl">.get(key)</code> returns <code class="inl">None</code> safely.</p>
+<pre class="code"><code class="py">acct = {"id": 1, "owner": "Ada", "balance": 1500.0}
+acct["owner"]        # "Ada"
+acct.get("phone")    # None — no KeyError</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">2.2 · Dict looping</p>
+      <h1 class="h">Keys, values, or both</h1>
+      <p class="lead">Loop the keys, the values, or both together with <code class="inl">.items()</code>.</p>
+<pre class="code"><code class="py">for key in acct: ...               # keys
+for value in acct.values(): ...    # values
+for key, value in acct.items():    # both
+    print(key, "=", value)</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">2.3 · Important dict functions</p>
+      <h1 class="h">Add, test, remove</h1>
+      <p class="lead">Add or overwrite by assignment or <code class="inl">update</code>; test membership with <code class="inl">in</code>; remove with <code class="inl">pop</code>.</p>
+<pre class="code"><code class="py">acct["balance"] = 1600.0           # update one field
+acct.update({"tier": "gold"})      # add / merge fields
+"owner" in acct                    # True</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">2.4 · Nested dicts</p>
+      <h1 class="h">Real records nest</h1>
+      <p class="lead">Values can themselves be lists or dicts. Reach in by chaining keys.</p>
+<pre class="code"><code class="py">acct = {"owner": "Ada",
+        "address": {"city": "Pune"},
+        "tags": ["primary", "online"]}
+acct["address"]["city"]   # "Pune"</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">2.5 · Save &amp; load with JSON</p>
+      <h1 class="h">A dict maps exactly to JSON</h1>
+      <p class="lead"><code class="inl">json.dump</code> writes it to disk; <code class="inl">json.load</code> reads it straight back <strong>as a Python dict</strong> — same shape, no parsing.</p>
+<pre class="code"><code class="py">import json
+json.dump(acct, open("acct.json", "w"), indent=2)   # dict → file
+back = json.load(open("acct.json"))                  # file → dict again</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">2.6 · Now with type hints</p>
+      <h1 class="h">Mixed values stay vague — on purpose</h1>
+      <p class="lead">Uniform values type precisely; our account <strong>mixes</strong> types, so the honest hint is <code class="inl">dict[str, object]</code> — and that vagueness is the signal a fixed-field record wants a <strong>class</strong> (Module 3).</p>
+<pre class="code"><code class="py">balances: dict[str, float] = {"Ada": 1500.0, "Lin": 800.0}             # uniform → precise
+acct: dict[str, object] = {"id": 1, "owner": "Ada", "balance": 1500.0} # mixed → want a class</code></pre>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 2</b> — access &amp; loop → nested → JSON round-trip → with type hints</div></div>
+    </section>
+
+    <section class="slide section">
+      <span class="ghost">3</span>
+      <div class="secrow">
+        <div class="secnum">3</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>Organizing access</h1>
+          <div class="sub">a store → insert/update → fetch → the seam → with type hints</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">3.1 · A dict as the store</p>
+      <h1 class="h">Keyed by id — instant lookup</h1>
+      <p class="lead">Keep all accounts in one dict keyed by id — <strong>instant (O(1))</strong> lookup by account number.</p>
+<pre class="code"><code class="py">accounts = {}                       # {id: account}
+accounts[1] = {"id": 1, "owner": "Ada", "balance": 1500.0}
+accounts[1]                         # lookup by id, no scanning</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">3.2 · insert &amp; update via functions</p>
+      <h1 class="h">One place owns the writes</h1>
+      <p class="lead">Wrap the writes in functions — one place owns "add" and "change", so every caller behaves the same.</p>
+<pre class="code"><code class="py">def insert(store, acct):           store[acct["id"]] = acct
+def update(store, id, **changes):  store[id].update(changes)</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">3.3 · fetch via a function</p>
+      <h1 class="h">Hide the lookup</h1>
+      <p class="lead">A <code class="inl">fetch</code> function gives one place to validate, default, or raise on a missing id.</p>
+<pre class="code"><code class="py">def fetch(store, id):
+    if id not in store:
+        raise LookupError(f"no account id={id}")
+    return store[id]</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">3.4 · The seam</p>
+      <h1 class="h">JSON today, a database tomorrow</h1>
+      <p class="lead">These functions hide <strong>where</strong> the data lives. Today they read/write a JSON file; later the same <code class="inl">insert</code>/<code class="inl">fetch</code> talk to a <strong>database</strong> — callers never change.</p>
+<pre class="code"><code class="py"># today:    store = json.load(open("accounts.json"))
+# tomorrow: store = db.query("SELECT ...")   # same insert()/fetch() on top</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">3.5 · Now with type hints</p>
+      <h1 class="h">A self-documenting storage layer</h1>
+      <p class="lead">The store is <code class="inl">dict[int, dict]</code>, an id is <code class="inl">int</code>, <code class="inl">fetch</code> returns a <code class="inl">dict</code>.</p>
+<pre class="code"><code class="py">def insert(store: dict[int, dict], acct: dict) -&gt; None:
+    store[acct["id"]] = acct
+
+def fetch(store: dict[int, dict], id: int) -&gt; dict:
+    ...</code></pre>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 3</b> — store + insert/update/fetch, backed by JSON → with type hints</div></div>
+    </section>
+
+    <section class="slide section">
+      <span class="ghost">4</span>
+      <div class="secrow">
+        <div class="secnum">4</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>Logging</h1>
+          <div class="sub">levels → applied to the storage</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">4.1 · Logging vs print</p>
+      <h1 class="h">Real code uses logging</h1>
+      <p class="lead"><code class="inl">print</code> is for throwaway scripts. Levels (<code class="inl">DEBUG &lt; INFO &lt; WARNING &lt; ERROR</code>) dial detail up or down without deleting lines.</p>
+<pre class="code"><code class="py">import logging
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger("bank")
+log.info("started")     # shown · log.debug("...") hidden at INFO</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">4.2 · Logging the storage</p>
+      <h1 class="h">An audit trail, for free</h1>
+      <p class="lead">Add one line to each storage op — now every <code class="inl">insert</code>/<code class="inl">update</code>/<code class="inl">fetch</code> and the JSON load leaves a trail.</p>
+<pre class="code"><code class="py">def fetch(store, id):
+    log.info("fetch id=%s", id)     # %s args, not an f-string
+    return store[id]</code></pre>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 4</b> — add logging to the Section-3 storage functions</div></div>
+    </section>
+
+    <section class="slide lab">
+      <span class="labtag">🧪 LAB 2 · 80 MIN</span>
+      <h1>Persistent Catalog</h1>
+      <p class="lead">Open <code class="inl">labs/lab-02-persistent-catalog/README.md</code> · scaffolds in <code class="inl">starter/</code></p>
+      <ul class="clean">
+        <li><code class="inl">catalog/storage.py</code> — save/load the catalog as JSON and CSV</li>
+        <li>comprehension-powered <code class="inl">search_by_name</code>, <code class="inl">filter_by_price</code></li>
+        <li><code class="inl">search</code> / <code class="inl">save</code> / <code class="inl">load</code> CLI subcommands</li>
+      </ul>
+      <div class="endstate">End state: your catalog <b>survives a process restart</b>.</div>
+    </section>
+
+    <!-- chrome injected per-slide by JS: progress + footer -->
+  </div>
+</div>
+
+<div class="nav">
+  <button id="prev" aria-label="Previous slide">◀</button>
+  <span class="count" id="count">1 / 30</span>
+  <button id="next" aria-label="Next slide">▶</button>
+</div>
+<div class="hint">← → to navigate</div>
+
+<script>
+(function(){
+  "use strict";
+  const stage = document.querySelector('.stage');
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const N = slides.length;
+  const countEl = document.getElementById('count');
+
+  // add progress bar + footer to each slide
+  slides.forEach((s, k)=>{
+    const p = document.createElement('div'); p.className='prog';
+    const f = document.createElement('div'); f.className='foot';
+    f.innerHTML = '<span class="brand"><span class="dot"></span>Acuity · Day 1 · Module 2 — Lists, Dicts &amp; Files</span>'
+                + '<span>'+String(k+1).padStart(2,'0')+' / '+String(N).padStart(2,'0')+'</span>';
+    s.appendChild(p); s.appendChild(f);
+    p.style.width = ((k+1)/N*100)+'%';
+  });
+
+  // ---- fit stage to viewport ----
+  function fit(){
+    const pad = 24;
+    const s = Math.min((window.innerWidth-pad*2)/1280, (window.innerHeight-pad*2-40)/720);
+    stage.style.transform = 'translate(-50%,-50%) scale('+s+')';
+  }
+  window.addEventListener('resize', fit); fit();
+
+  // ---- navigation ----
+  let i = 0;
+  function show(n){
+    i = Math.max(0, Math.min(N-1, n));
+    slides.forEach((s,k)=>s.classList.toggle('active', k===i));
+    countEl.textContent = (i+1)+' / '+N;
+    location.hash = i+1;
+  }
+  function next(){ show(i+1); }
+  function prev(){ show(i-1); }
+
+  document.getElementById('next').addEventListener('click', next);
+  document.getElementById('prev').addEventListener('click', prev);
+  window.addEventListener('keydown', e=>{
+    if(['ArrowRight','PageDown',' '].includes(e.key)){ e.preventDefault(); next(); }
+    else if(['ArrowLeft','PageUp'].includes(e.key)){ e.preventDefault(); prev(); }
+    else if(e.key==='Home'){ e.preventDefault(); show(0); }
+    else if(e.key==='End'){ e.preventDefault(); show(N-1); }
+  });
+  const start = parseInt(location.hash.replace('#',''),10);
+  if(start>=1 && start<=N) i = start-1;
+
+  // ---- minimal Python syntax highlighter (self-contained, CSP-safe) ----
+  const KW = new Set(['def','return','if','elif','else','for','while','in','not','and','or',
+    'import','from','as','try','except','finally','raise','with','class','lambda','pass',
+    'break','continue','is','yield','global','nonlocal','assert','del','await','async']);
+  const CON = new Set(['True','False','None']);
+  const BI = new Set(['print','type','len','sum','range','enumerate','isinstance','open','list',
+    'dict','set','tuple','int','float','str','bool','round','dir','sorted','map','filter','zip',
+    'LookupError','ValueError','KeyError','TypeError']);
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const TOK = /(#.*$)|((?:[fFrRbB]{0,2})(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'))|(\b\d+\.?\d*\b)|([A-Za-z_]\w*)/gm;
+
+  document.querySelectorAll('pre.code code').forEach(block=>{
+    const src = block.textContent;
+    let out='', last=0, m;
+    TOK.lastIndex = 0;
+    while((m = TOK.exec(src))){
+      out += esc(src.slice(last, m.index));
+      if(m[1])       out += '<span class="t-com">'+esc(m[1])+'</span>';
+      else if(m[2])  out += '<span class="t-str">'+esc(m[2])+'</span>';
+      else if(m[3])  out += '<span class="t-num">'+esc(m[3])+'</span>';
+      else if(m[4]){
+        const w = m[4];
+        const cls = KW.has(w)?'t-kw':CON.has(w)?'t-con':BI.has(w)?'t-bi':null;
+        out += cls ? '<span class="'+cls+'">'+esc(w)+'</span>' : esc(w);
+      }
+      last = m.index + m[0].length;
+    }
+    out += esc(src.slice(last));
+    block.innerHTML = out;
+  });
+
+  show(i);
+})();
+</script>

@@ -4,7 +4,7 @@ Copy into your `catalog/` package and fill the `# TODO`s. Builds on Lab 1's
 `make_product`. No classes yet (Module 3). Keep the **type hints** — that's the
 best practice from Module 2.
 
-Done-signal: pytest tests/test_lab02.py -v goes green.
+Done-signal: uvx pytest tests/test_lab02.py -v goes green.
 """
 
 from __future__ import annotations

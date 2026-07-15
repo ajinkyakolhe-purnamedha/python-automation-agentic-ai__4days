@@ -227,7 +227,8 @@ def create(acct: dict):
 Start the server, then hit it from a browser or curl. FastAPI generates **interactive docs** for free.
 
 ```bash
-uvicorn catalog.server:app --reload
+uv sync                                # once — installs FastAPI
+uv run uvicorn catalog.server:app --reload
 curl localhost:8000/accounts/1
 # then open http://localhost:8000/docs
 ```

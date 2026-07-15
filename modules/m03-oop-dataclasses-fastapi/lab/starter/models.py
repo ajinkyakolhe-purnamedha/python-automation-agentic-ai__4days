@@ -5,7 +5,7 @@ The Module-3 refactor: Lab 1/2's product-dicts and loose functions become a type
 functions. This supersedes Lab 2's `storage.py` (the class now owns persistence too).
 
 Copy into your `catalog/` package and fill every `# TODO`.
-Done-signal: pytest tests/test_lab03.py -v goes green.
+Done-signal: uv run pytest tests/test_lab03.py -v goes green.
 """
 
 from __future__ import annotations

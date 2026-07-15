@@ -1,10 +1,10 @@
 """FastAPI server exposing the Product Catalog (Day 1 Lab 3).
 
-A route is a function with `@app.get`/`@app.post` on top — use the `@` as given
-(the Decorators module explains how it works). Map `CatalogError` -> HTTP codes:
-missing -> 404, duplicate -> 409, bad payload -> 400.
+A route is a function with `@app.get`/`@app.post` on top — a decorator you *use*
+(the `@` hands your function to FastAPI; you never write your own). Map
+`CatalogError` -> HTTP codes: missing -> 404, duplicate -> 409, bad payload -> 400.
 
-Run:  uvicorn catalog.server:app --reload
+Run:  uv run uvicorn catalog.server:app --reload
 Done-signal: the TestServer class in tests/test_lab03.py.
 """
 

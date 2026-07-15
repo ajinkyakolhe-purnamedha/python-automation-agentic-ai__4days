@@ -2,7 +2,7 @@
 
 Copy this into your working folder's `catalog/` package and fill every `# TODO`.
 No classes yet — just dicts and functions (Module 3 turns these into a class).
-Done-signal: pytest tests/test_lab01.py -v goes green.
+Done-signal: uvx pytest tests/test_lab01.py -v goes green.
 """
 
 from __future__ import annotations
