@@ -135,8 +135,8 @@
            background:var(--grad);transform:rotate(45deg);box-shadow:0 3px 8px -3px var(--glow)}
   ul.clean li b{font-weight:700}
 
-  /* week map */
-  pre.map{margin:0;background:var(--code-bg);border:1px solid var(--code-line);border-radius:13px;padding:26px 30px;
+  /* week / architecture map */
+  pre.map{margin:0 0 22px;background:var(--code-bg);border:1px solid var(--code-line);border-radius:13px;padding:26px 30px;
           font-family:var(--mono);font-size:20px;line-height:1.85;color:var(--ink);overflow-x:auto;
           box-shadow:0 18px 40px -26px rgba(19,26,36,.4)}
   pre.map b{color:var(--accent);font-weight:700}
@@ -214,8 +214,18 @@
       <span class="tglow"></span>
       <p class="kicker">Acuity · Day 1 · Module 3</p>
       <h1>OOP, Dataclasses<br>&amp; <span class="grad">FastAPI</span></h1>
-      <h2>Wrap data and behavior into one object — then serve it over HTTP</h2>
-      <p class="metaline"><b>4 sections</b> · ~40 min · Lab 3</p>
+      <h2>Wrap data + behavior into one object, then serve it as an API — <b>the shape behind Python &amp; AI apps</b></h2>
+      <p class="metaline"><b>4 sections</b> · ~50 min · Lab 3</p>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">The through-line</p>
+      <h1 class="h">Not four features — one application</h1>
+      <p class="lead">You already have the pieces from M1–M2. Today they become an <strong>app with a real front door</strong> — the same catalog, reachable by more and more callers.</p>
+<pre class="map"> browser ─▶ <b>server.py</b> ─▶ ProductCatalog ─▶ files
+ (caller)   <b>(FastAPI)</b>    (your M1–M2 core)  (data)
+              ↑ add this today (§4)</pre>
+      <p class="lead soft">§1–3 make the core solid; <strong>§4 adds the API layer</strong>. A script calls it now, HTTP in §4, an agent on Day 4.</p>
     </section>
 
     <section class="slide">
@@ -224,7 +234,7 @@
       <p class="lead">Module 2 left an account as a <code class="inl">dict</code> + loose <code class="inl">insert/update/fetch</code> functions — and a <strong>mixed-value dict that was hard to type</strong>. The fix: a <strong>class</strong>.</p>
 <pre class="code"><code class="py">acct = {"id": 1, "owner": "Ada", "balance": 1500.0}   # M2: a bare dict
 ada  = BankAccount(1, "Ada", 1500.0)                  # M3: an object with methods</code></pre>
-      <p class="lead soft">Build the class by hand → shortcut with <code class="inl">@dataclass</code> → specialize with inheritance → expose over HTTP.</p>
+      <p class="lead soft">Build by hand → shortcut with <code class="inl">@dataclass</code> → specialize with inheritance → expose over HTTP. This class is the <strong>core</strong> every caller talks to.</p>
     </section>
 
     <section class="slide section">
@@ -235,7 +245,7 @@ ada  = BankAccount(1, "Ada", 1500.0)                  # M3: an object with metho
         <div class="secmeta">
           <p class="eyebrow">Section</p>
           <h1>OOP — the class by hand</h1>
-          <div class="sub">why → class / __init__ / self → attributes → methods</div>
+          <div class="sub">why → class / __init__ / self → attributes → methods<br><b>Why now:</b> the app's core must protect its own data — a dict can't.</div>
         </div>
       </div>
     </section>
@@ -287,7 +297,7 @@ ada.owner = "Ada K." # set with the dot too</code></pre>
         <div class="secmeta">
           <p class="eyebrow">Section</p>
           <h1>@dataclass — the clean record</h1>
-          <div class="sub">boilerplate → @dataclass → the data-structure step → defaults → methods</div>
+          <div class="sub">boilerplate → @dataclass → the data-structure step → defaults → methods<br><b>Why now:</b> the core's shape is right — kill the boilerplate so the record stays honest.</div>
         </div>
       </div>
     </section>
@@ -355,7 +365,7 @@ class BankAccount:
         <div class="secmeta">
           <p class="eyebrow">Section</p>
           <h1>Inheritance</h1>
-          <div class="sub">is-a → inherit → override + super() → Pydantic</div>
+          <div class="sub">is-a → inherit → override + super() → Pydantic<br><b>Why now:</b> specialize the core without rewriting it — the is-a that powers Pydantic.</div>
         </div>
       </div>
     </section>
@@ -404,14 +414,44 @@ s.withdraw(100)        # BankAccount's method, inherited as-is</code></pre>
         <div class="secdiv"></div>
         <div class="secmeta">
           <p class="eyebrow">Section</p>
-          <h1>FastAPI — expose the catalog</h1>
-          <div class="sub">route = @app.get fn → build → run → where it goes</div>
+          <h1>FastAPI — the app's front door</h1>
+          <div class="sub">what it is → why an API → why FastAPI → build → run → where it sits → AI apps</div>
         </div>
       </div>
     </section>
 
     <section class="slide">
-      <p class="eyebrow">4.1 · A route is a function with @app.get</p>
+      <p class="eyebrow">4.1 · What FastAPI is</p>
+      <h1 class="h">Functions become HTTP endpoints</h1>
+      <p class="lead"><strong>FastAPI is a web framework</strong>: it turns your Python functions into URLs other programs can call over the network.</p>
+<pre class="map"> your Python function  ─FastAPI─▶  <b>GET http://localhost:8000/products</b></pre>
+      <p class="lead soft">It's the <strong>front door</strong> to your app — the core stays pure Python; FastAPI lets the outside world in.</p>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">4.2 · Why an API?</p>
+      <h1 class="h">Callers aren't always Python</h1>
+      <p class="lead">A browser, a mobile app, another team's service can't <code class="inl">import catalog</code> — they speak <strong>HTTP</strong>. The API is the shared doorway to your engine.</p>
+<pre class="map"> browser ┐
+ mobile  ├─ HTTP ─▶ <b>server.py</b> ─▶ ProductCatalog ─▶ files
+ service ┘         (one door)      (one core)         (data)</pre>
+      <p class="lead soft"><strong>One core, many callers.</strong> Change the core freely; the doorway stays the same.</p>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">4.3 · Why FastAPI</p>
+      <h1 class="h">Your type hints start doing work</h1>
+      <p class="lead">The hints you've written since M1 become real machinery — for free:</p>
+      <ul class="clean">
+        <li><b>Validation</b> — a route typed <code class="inl">product_id: int</code> rejects <code class="inl">/products/abc</code> with a clean <code class="inl">422</code>, before your code runs</li>
+        <li><b>Docs</b> — an interactive <code class="inl">/docs</code> page, generated from your signatures</li>
+        <li><b>Pydantic-powered</b> — the Day-2 models become the request / response contract</li>
+        <li><b>The Python standard</b> for APIs — and for AI / ML services (model endpoints, RAG, agent backends)</li>
+      </ul>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">4.4 · A route is a function with @app.get</p>
       <h1 class="h">Put the decorator on top</h1>
       <p class="lead">FastAPI turns a function into a web endpoint: put <code class="inl">@app.get("/path")</code> above it, and it runs when a request hits that path.</p>
 <pre class="code"><code class="py">app = FastAPI()
@@ -423,7 +463,7 @@ def list_accounts():
     </section>
 
     <section class="slide">
-      <p class="eyebrow">4.2 · Build the server — GET &amp; POST</p>
+      <p class="eyebrow">4.5 · Build the server — GET &amp; POST</p>
       <h1 class="h">One function per route</h1>
       <p class="lead">Return your objects and FastAPI serialises them to JSON; take a <strong>path parameter</strong> to fetch one.</p>
 <pre class="code"><code class="py">@app.get("/accounts/{id}")
@@ -436,20 +476,49 @@ def create(acct: dict):
     </section>
 
     <section class="slide">
-      <p class="eyebrow">4.3 · Run it — uvicorn + /docs</p>
+      <p class="eyebrow">4.6 · Run it — uvicorn + /docs</p>
       <h1 class="h">Interactive docs, for free</h1>
       <p class="lead">Start the server, then hit it from a browser or curl. This is the <strong>end-of-Day-1 artifact</strong>: a running API serving a catalog you built.</p>
 <pre class="code" data-lang="bash"><code class="py">uv sync                                # once — installs FastAPI
 uv run uvicorn catalog.server:app --reload
 curl localhost:8000/accounts/1
 # then open http://localhost:8000/docs</code></pre>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 4</b> — a FastAPI app over the accounts: GET, POST, run it</div></div>
     </section>
 
     <section class="slide">
-      <p class="eyebrow">4.4 · Where this goes</p>
-      <h1 class="h">Tools are just registered functions</h1>
-      <p class="lead">The same "register a function" shape returns on <strong>Day 4</strong>: an agent's <strong>tools</strong> are just functions the LLM is allowed to call — exactly like routes.</p>
-      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 4</b> — a FastAPI app over the accounts: GET, POST, run it</div></div>
+      <p class="eyebrow">4.7 · The shape of a real Python app</p>
+      <h1 class="h">Three files, three layers</h1>
+      <p class="lead">The modules you wrote <strong>are</strong> a layered application — each one job, each layer talking only to the next.</p>
+<pre class="map"> HTTP ─▶ <b>server.py</b>   API layer    — routes, status, JSON
+           │
+           ▼
+        <b>models.py</b>   domain core  — Product, Catalog, rules
+           │
+           ▼
+        <b>storage.py</b>  persistence  — save / load JSON, CSV</pre>
+      <p class="lead soft"><strong>The layering is the lesson</strong> — swap FastAPI for a CLI, or JSON for a database, and the core never changes.</p>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">4.8 · The same shape builds AI apps</p>
+      <h1 class="h">An AI app is a FastAPI backend + an LLM</h1>
+      <p class="lead">Your catalog server is exactly the backend an AI feature calls — and <strong>tool-calling is the pattern you just learned</strong>:</p>
+<pre class="map"> user ─▶ <b>FastAPI backend</b> ─▶ LLM ─▶ picks a tool
+                 ▲                        │
+                 └──  your catalog  ◀─────┘</pre>
+      <div class="along"><span class="play">@</span><div><code>@app.get</code> exposes your function to the <b>web</b>; <code>@agent.tool</code> exposes it to an <b>LLM</b>. The Pydantic types become the tool's schema. Same move.</div></div>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">4.9 · Where this goes</p>
+      <h1 class="h">The decorator you keep meeting</h1>
+      <p class="lead">You've <em>used</em> <code class="inl">@dataclass</code> and <code class="inl">@app.get</code> without writing either. That "hand your function to a framework" move returns twice more:</p>
+      <table class="moves">
+        <tr><td class="tool">@dataclass · @app.get</td><td>Day 1 — builds a record · serves a route</td></tr>
+        <tr><td class="tool">@pytest.fixture · @parametrize</td><td>Day 3 — injects test setup · fans a test over data</td></tr>
+        <tr><td class="tool">@agent.tool</td><td>Day 4 — exposes your function to an <b>LLM</b></td></tr>
+      </table>
     </section>
 
     <section class="slide lab">

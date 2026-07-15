@@ -18,14 +18,12 @@ from .models import Product, ProductCatalog
 
 def save_json(catalog: ProductCatalog, path: str | Path) -> None:
     """Write the catalog's products to JSON as a list (indent=2)."""
-    # TODO: Path(path).write_text(
-    #           json.dumps([p.to_dict() for p in catalog.list_all()], indent=2))
+    # TODO: json.dumps each product's to_dict() as a list, write it to the path (indent=2)
     ...
 
 
 def load_json(path: str | Path) -> ProductCatalog:
     """Rebuild a ProductCatalog from JSON. Missing file -> empty catalog ({})."""
-    # TODO: if not Path(path).exists(): return ProductCatalog()
-    #       rows = json.loads(Path(path).read_text())
-    #       return ProductCatalog([Product(**row) for row in rows])
+    # TODO: missing file -> empty ProductCatalog(). Else read the JSON list and
+    #       rebuild each product via Product(**row) into a new ProductCatalog.
     ...

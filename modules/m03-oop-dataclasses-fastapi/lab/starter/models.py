@@ -23,8 +23,9 @@ class CatalogError(Exception):
 
 @dataclass
 class Product:
-    # TODO: typed fields — id:int, name:str, category:str, price:float,
-    #       in_stock:bool = True, tags:list[str] = field(default_factory=list)
+    # TODO: typed fields — id:int, name:str, category:str, price:float, in_stock:bool = True,
+    #       and tags:list[str] with a SAFE mutable default (recall the M1 tags=[] trap; the
+    #       `field` import above is the tool). Required fields first, defaulted fields last.
 
     def to_dict(self) -> dict:
         """Serialise to a plain dict. (Day 2's Pydantic model swaps this for model_dump().)"""

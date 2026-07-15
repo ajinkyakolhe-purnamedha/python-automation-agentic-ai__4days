@@ -38,22 +38,20 @@ def health() -> dict:
 
 @app.get("/products")
 def list_products() -> list[dict]:
-    # TODO: [p.to_dict() for p in catalog.list_all()]
+    # TODO: serialise every product from catalog.list_all() (to_dict) into a list
     ...
 
 
 @app.get("/products/{product_id}")
 def get_product(product_id: int) -> dict:
-    # TODO: try: return catalog.get(product_id).to_dict()
-    #       except CatalogError as e: raise HTTPException(404, str(e))
+    # TODO: return the product's to_dict(); map a missing-id CatalogError -> HTTPException(404)
     ...
 
 
 @app.post("/products", status_code=201)
 def create_product(payload: dict) -> dict:
-    # TODO: build Product(**payload)  (TypeError -> HTTPException(400, ...));
-    #       catalog.add(new)          (CatalogError -> HTTPException(409, ...));
-    #       return new.to_dict()
+    # TODO: build a Product from the payload (bad body TypeError -> 400);
+    #       add it to the catalog (duplicate id CatalogError -> 409); return its to_dict()
     ...
 
 

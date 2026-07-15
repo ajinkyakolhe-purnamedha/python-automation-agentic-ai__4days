@@ -24,7 +24,9 @@ cp ../../modules/m01-python-core/lab/starter/*.py catalog/   # run from capstone
 
 ## Steps (all in `models.py`)
 
-1. **`make_product`** — return the 6-field dict. Default `in_stock=True`; default `tags` via the `None` sentinel, **never `tags=[]`** (one list shared across every product — the Python trap with no JS analog):
+1. **`make_product`** — return the 6-field dict. Default `in_stock=True`; default `tags` via the `None` sentinel, **never `tags=[]`** (one list shared across every product — the Python trap with no JS analog). The signature + docstring in `starter/models.py` are the contract; write it yourself first.
+   <details><summary>🔑 Peek if stuck — full solution</summary>
+
    ```python
    def make_product(id, name, category, price, in_stock=True, tags=None):
        if tags is None:
@@ -32,6 +34,7 @@ cp ../../modules/m01-python-core/lab/starter/*.py catalog/   # run from capstone
        return {"id": id, "name": name, "category": category,
                "price": price, "in_stock": in_stock, "tags": tags}
    ```
+   </details>
 2. **`add_product(catalog, product)`** — `raise ValueError` on `price < 0` or a duplicate id (loop to check); else append, `logger.info(...)`, return it.
 3. **`find_product(catalog, id)`** — return the match, or `raise LookupError(f"no product id={id}")`.
 4. **`search_by_name` / `list_products`** — a case-insensitive-substring filter; and a **copy** of the list (callers must not mutate yours).

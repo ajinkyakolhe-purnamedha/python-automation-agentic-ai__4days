@@ -10,8 +10,20 @@ footer: "Acuity Training · Day 1 of 4"
 
 # Module 3
 ## OOP, Dataclasses & FastAPI
-**4 sections · ~40 min** — each builds on the last; we code each one live
+**4 sections · ~50 min** — each builds on the last; we code each one live
 1 The class by hand · 2 @dataclass · 3 Inheritance · 4 FastAPI
+---
+# What we're really building today
+
+Not four OOP features — **one application**. You already have the pieces from M1–M2; today they become an app with a real **front door**.
+
+```
+ browser / curl  ──▶  server.py   ──▶  Product +          ──▶  .json
+ (any caller)         (FastAPI)        ProductCatalog          .csv
+                      ↑ today (§4)     ↑ your M1–M2 core        ↑ M2
+```
+
+Right now the core is loose functions in files. **§1–3 make it a solid core; §4 adds the API front door** — the same catalog, reachable by more and more callers.
 ---
 # From a dict to a class
 
@@ -22,12 +34,13 @@ acct = {"id": 1, "owner": "Ada", "balance": 1500.0}   # M2: a bare dict
 ada  = BankAccount(1, "Ada", 1500.0)                   # M3: an object with methods
 ```
 
-Today: build the class by hand → shortcut it with `@dataclass` → specialize with inheritance → expose it over HTTP.
+Today: build the class by hand → shortcut it with `@dataclass` → specialize with inheritance → expose it over HTTP. This class is the **core** every caller talks to — a script now, HTTP in §4, an agent on Day 4.
 ---
 <!-- _class: section -->
 
 # Section 1 · OOP — the class by hand
 ## why → class/__init__/self → attributes → methods
+**Why now:** the app's core must protect its own data — a bare `dict` can't.
 ---
 # 1.1 · Why a class
 
@@ -77,6 +90,7 @@ class BankAccount:
 
 # Section 2 · @dataclass — the clean record
 ## boilerplate → @dataclass → the data-structure step → defaults → methods
+**Why now:** the core's shape is right — kill the boilerplate so the record stays honest.
 ---
 # 2.1 · That's a lot of boilerplate
 
@@ -144,6 +158,7 @@ class BankAccount:
 
 # Section 3 · Inheritance
 ## is-a → inherit → override + super() → Pydantic
+**Why now:** specialize the core without rewriting it — the same `is-a` that powers Pydantic (Day 2).
 ---
 # 3.1 · Why inherit — *is-a*
 
@@ -191,10 +206,43 @@ Same `is-a` mechanism you just learned — `@dataclass` becomes `BaseModel`, plu
 ---
 <!-- _class: section -->
 
-# Section 4 · FastAPI — expose the catalog
-## route = @app.get fn → build → run → where it goes
+# Section 4 · FastAPI — the app's front door
+## what it is → why an API → why FastAPI → build → run → where it sits → AI apps
 ---
-# 4.1 · A route is a function with `@app.get` on top
+# 4.1 · What FastAPI *is*
+
+**FastAPI is a web framework**: it turns your Python functions into **HTTP endpoints** other programs can call over the network. You write a function; FastAPI makes it reachable at a URL.
+
+```
+ your Python function   ──FastAPI──▶   GET http://localhost:8000/products
+```
+
+It's the **front door** to your Python app: the core stays pure Python; FastAPI lets the outside world in.
+---
+# 4.2 · Why an API? Callers aren't always Python
+
+Your catalog core is the **engine**. But a browser, a mobile app, another team's service, or a script in another language can't `import catalog` — they speak **HTTP**. The API is the shared doorway.
+
+```
+ browser ┐
+ mobile  ├─▶ HTTP ─▶ server.py ─▶ ProductCatalog ─▶ files
+ service ┘           (one door)     (one core)       (data)
+```
+
+**One core, many callers.** Change the core freely; the doorway stays the same.
+---
+# 4.3 · Why *FastAPI*
+
+It turns the **type hints** you've written since M1 into real machinery — for free:
+
+- **Validation** — a route typed `product_id: int` rejects `/products/abc` with a clean `422`, *before* your code runs
+- **Docs** — an interactive `/docs` page, generated from your signatures
+- **Pydantic-powered** — the Day-2 models become the request/response contract
+- **The Python standard for APIs — and for AI/ML services** (model endpoints, RAG, agent backends)
+
+The hints stop being decoration and start doing work.
+---
+# 4.4 · A route is a function with `@app.get` on top
 
 FastAPI turns a function into a web endpoint: put `@app.get("/path")` above it, and it runs when a request hits that path.
 
@@ -208,7 +256,7 @@ def list_accounts():
 
 > That `@` is a decorator again — same idea as `@dataclass`: you hand `list_accounts` to FastAPI and it becomes a route. You'll meet this shape twice more — `@pytest.fixture` on Day 3, `@agent.tool` on Day 4.
 ---
-# 4.2 · Build the server — GET & POST
+# 4.5 · Build the server — GET & POST
 
 One function per route. Return your objects and FastAPI serialises them to JSON; take a **path parameter** to fetch one.
 
@@ -222,7 +270,7 @@ def create(acct: dict):
     insert(STORE, acct); return acct
 ```
 ---
-# 4.3 · Run it — `uvicorn` + `/docs`
+# 4.6 · Run it — `uvicorn` + `/docs`
 
 Start the server, then hit it from a browser or curl. FastAPI generates **interactive docs** for free.
 
@@ -234,12 +282,50 @@ curl localhost:8000/accounts/1
 ```
 
 **This is the end-of-Day-1 artifact:** a running API serving a catalog you built.
----
-# 4.4 · Where this goes
-
-The same "register a function" shape returns on **Day 4**: an agent's **tools** are just functions the LLM is allowed to call — exactly like routes.
 
 <div class="code-along">▶ Code-along now → notebook Section 4 — a FastAPI app over the accounts: GET, POST, run it</div>
+---
+# 4.7 · The shape of a real Python app
+
+Step back: the three files you wrote **are** a layered application — each module one job, each layer talking only to the next.
+
+```
+ HTTP ─▶ server.py    · API layer    — routes, HTTP status, JSON   (FastAPI)
+            │
+            ▼
+         models.py    · domain core  — Product, ProductCatalog, the rules
+            │
+            ▼
+         storage.py   · persistence  — save / load JSON & CSV
+```
+
+**This layering is the lesson** — swap FastAPI for a CLI, or JSON for a database, and the core never changes.
+---
+# 4.8 · The same shape builds AI apps
+
+A modern AI app is **a FastAPI backend** with an LLM wired in. Your catalog server is exactly the backend an AI feature calls:
+
+```
+ user ─▶ FastAPI backend ─▶ LLM ─▶ picks a "tool"
+                 ▲                     │
+                 └────  your catalog ◀─┘   (the tool runs, returns data)
+```
+
+The **tool-calling** pattern *is* the pattern you just learned: an agent **tool** is a typed Python function a framework exposes to the LLM — exactly like `@app.get` exposes one over HTTP. The **Pydantic types** become the tool's schema (Day 2 → Day 4).
+
+> `@app.get` exposes your function to the **web**; `@agent.tool` exposes it to an **LLM**. Same move.
+---
+# 4.9 · Where this goes — the decorator you keep meeting
+
+You've now *used* two framework decorators — `@dataclass` and `@app.get` — without writing either. That same "hand your function to a framework" move returns twice more:
+
+| Day | Decorator | The framework then… |
+|---|---|---|
+| 1 (today) | `@dataclass` · `@app.get` | builds a record · serves a route |
+| 3 | `@pytest.fixture` · `@parametrize` | injects test setup · fans a test over data |
+| 4 | `@agent.tool` | exposes your function to an **LLM** |
+
+Every one is the same idea you met building this app today.
 ---
 <!-- _class: lab -->
 

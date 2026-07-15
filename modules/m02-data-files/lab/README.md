@@ -24,12 +24,14 @@ cp ../../modules/m02-data-files/lab/starter/storage.py catalog/   # run from cap
 ## Steps
 
 1. **The store.** `make_store(products)` → `{p["id"]: p for p in products}` (instant lookup). `insert(store, product)` sets `store[id]`; `fetch(store, id)` returns it or `raise LookupError`.
-2. **Queries are comprehensions** over `store.values()` — one line each:
+2. **Queries are comprehensions** over `store.values()` — one line each. `search_by_name` keeps products whose name contains `term` (case-insensitive); `filter_by_price` is the same shape with `p["price"] <= max_price`. Try both before peeking.
+   <details><summary>🔑 Peek if stuck — full solution</summary>
+
    ```python
    def search_by_name(store: dict[int, dict], term: str) -> list[dict]:
        return [p for p in store.values() if term.lower() in p["name"].lower()]
    ```
-   `filter_by_price(store, max_price)` is the same shape (`p["price"] <= max_price`).
+   </details>
 3. **JSON** = your dicts on disk. `save_json` writes `list(store.values())`; `load_json` reads it and rebuilds via `make_store(...)`. **Missing file → return an empty store `{}`**, don't crash.
 4. **CSV** = the type-loss format. `save_csv` writes **scalar** fields only (`tags` is a list, dropped via `extrasaction="ignore"` — JSON is what keeps lists). `load_csv` reads every cell back as a **string**, so coerce: `int(id)`, `float(price)`, `in_stock == "True"`, `tags=[]`; reuse `make_product(...)`. *This string-coercion pain is exactly what Day-2 Pydantic removes.*
 

@@ -22,7 +22,8 @@ def make_product(id, name, category, price, in_stock=True, tags=None):
     `tags` defaults to a NEW empty list each call (never `tags=[]` — that would
     share one list across every product; use the None sentinel).
     """
-    # TODO: if tags is None -> tags = []; return the product dict with all 6 fields
+    # TODO: return the 6-field product dict; give tags a fresh list per call via the
+    #       None sentinel (never tags=[] — the shared-list trap test_tags_are_not_shared checks)
     ...
 
 
@@ -45,7 +46,7 @@ def find_product(catalog, product_id):
 
 def search_by_name(catalog, term):
     """Return a list of products whose name contains `term` (case-insensitive)."""
-    # TODO: loop the catalog, keep products where term.lower() is in name.lower()
+    # TODO: keep products whose name contains term, case-insensitive
     ...
 
 

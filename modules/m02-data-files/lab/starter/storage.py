@@ -25,13 +25,13 @@ CSV_FIELDS = ["id", "name", "category", "price", "in_stock"]   # scalars only �
 
 def make_store(products: list[dict]) -> dict[int, dict]:
     """Build a {id: product} store from a list of products."""
-    # TODO: return {p["id"]: p for p in products}
+    # TODO: dict comprehension — key each product by its id
     ...
 
 
 def insert(store: dict[int, dict], product: dict) -> None:
     """Add (or replace) a product in the store, keyed by its id."""
-    # TODO: store[product["id"]] = product ; logger.info("inserted id=%s", ...)
+    # TODO: store the product under its id key; logger.info the insert
     ...
 
 
@@ -43,42 +43,40 @@ def fetch(store: dict[int, dict], product_id: int) -> dict:
 
 def search_by_name(store: dict[int, dict], term: str) -> list[dict]:
     """Products whose name contains `term` (case-insensitive). Use a comprehension."""
-    # TODO: [p for p in store.values() if term.lower() in p["name"].lower()]
+    # TODO: comprehension over store.values(); case-insensitive substring match on name
     ...
 
 
 def filter_by_price(store: dict[int, dict], max_price: float) -> list[dict]:
     """Products with price <= max_price. Use a comprehension."""
-    # TODO: [p for p in store.values() if p["price"] <= max_price]
+    # TODO: comprehension over store.values(); keep where price <= max_price
     ...
 
 
 def save_json(store: dict[int, dict], path: str | Path) -> None:
     """Write the products to JSON as a list. indent=2."""
-    # TODO: Path(path).write_text(json.dumps(list(store.values()), indent=2))
+    # TODO: json.dumps the store's values() as a list, write it to the path (indent=2)
     ...
 
 
 def load_json(path: str | Path) -> dict[int, dict]:
     """Read products from JSON and rebuild the store. Missing file -> empty store ({})."""
-    # TODO: if not Path(path).exists(): logger.warning(...); return {}
-    #       rows = json.loads(Path(path).read_text()); return make_store(rows)
+    # TODO: missing file -> logger.warning and return an empty store ({})
+    #       else read the JSON list back and rebuild it via make_store(...)
     ...
 
 
 def save_csv(store: dict[int, dict], path: str | Path) -> None:
     """Write the products' SCALAR fields to CSV (the `tags` list doesn't fit a flat cell).
     Open with newline=''."""
-    # TODO: with open(path, "w", newline="") as fh:
-    #           w = csv.DictWriter(fh, CSV_FIELDS, extrasaction="ignore"); w.writeheader()
-    #           for p in store.values(): w.writerow(p)   # extrasaction="ignore" drops `tags`
+    # TODO: DictWriter over CSV_FIELDS with extrasaction="ignore" (that's what drops the
+    #       tags list); writeheader, then one row per product. Open the file with newline="".
     ...
 
 
 def load_csv(path: str | Path) -> dict[int, dict]:
     """Read products from CSV, coercing string columns back to real types (tags -> [])."""
-    # TODO: missing file -> {}. Else, for each DictReader row build a product with
-    #       make_product(int(row["id"]), row["name"], row["category"],
-    #                    float(row["price"]), row["in_stock"] == "True")   # tags default to []
-    #       and collect them into a store. (CSV didn't store tags — that's the lesson.)
+    # TODO: missing file -> {}. Else DictReader each row and COERCE the strings back:
+    #       id -> int, price -> float, in_stock -> bool ("True" == True). Rebuild via
+    #       make_product(...); tags default to [] (CSV didn't store them — that's the lesson).
     ...
