@@ -10,8 +10,8 @@ footer: "Acuity Training · Day 1 of 4"
 
 # Module 2
 ## Lists, Dicts & Files
-**4 sections · ~40 min** — each builds on the last; we code each one live
-1 Lists & CSV · 2 Dicts & JSON · 3 Organizing via functions · 4 Logging
+**5 sections · ~50 min** — each builds on the last; we code each one live
+1 Lists & CSV · 2 Dicts & JSON · 3 Organizing via functions · 4 Logging · 5 Revision
 ---
 # From one account to many
 
@@ -26,7 +26,7 @@ Today: **many** accounts in the two containers that matter — `list` and `dict`
 <!-- _class: section -->
 
 # Section 1 · Lists & CSV
-## elements → slice → loop → comprehension → CSV → with type hints
+## elements → slice → loop → comprehensions → CSV → the type-loss gotcha → type hints
 ---
 # 1.1 · List elements — index
 
@@ -66,7 +66,18 @@ upper = [name.upper() for name in owners]          # transform → ['ADA','LIN',
 with_a = [n for n in owners if n.startswith("A")]  # filter   → ['Ada']
 ```
 ---
-# 1.5 · A CSV row is a list
+# 1.5 · Comprehension patterns
+
+Pluck a field, filter rows, transform each, or combine filter + transform — all one-liners over a list of product dicts.
+
+```python
+names    = [p["name"] for p in products]                    # pluck one field
+cheap    = [p for p in products if p["price"] < 500]        # filter rows
+labels   = [f'{p["name"]} — ₹{p["price"]}' for p in products]  # transform each
+on_sale  = [p["name"] for p in products if p["in_stock"]]   # filter + transform
+```
+---
+# 1.6 · A CSV row is a list
 
 The most common real-world data is a **CSV**. Read it with `csv.reader` — **each row comes back as a list** of strings.
 
@@ -76,7 +87,7 @@ for row in csv.reader(open("accounts.csv")):
     row    # ['1', 'Ada', '1500.0']  — a list; every value is a str
 ```
 ---
-# 1.6 · Reading a CSV file — the ways
+# 1.7 · Reading a CSV file — the ways
 
 The **header** is just the first row. Split it off and loop the rest, or let `DictReader` pair each value with its column name.
 
@@ -86,7 +97,19 @@ header, data = rows[0], rows[1:]        # header row vs the data rows
 # or: csv.DictReader(...) -> each row a dict keyed by header (→ Section 2)
 ```
 ---
-# 1.7 · Now with type hints — best practice
+# 1.8 · Gotcha — CSV is the type-loss format
+
+Write with `DictWriter`, read with `DictReader` — but numbers and bools come back as **text**, and a list field can't fit a flat cell at all. **Coerce on load.**
+
+```python
+row = next(csv.DictReader(open("products.csv")))
+row["price"]          # "499.0"   ← a string, not a float!
+float(row["price"])   # 499.0     ← you must coerce it back yourself
+row["in_stock"]       # "True"    ← a string too — "True" == True is False
+# tags (a list) doesn't fit one cell → JSON is the format that keeps lists
+```
+---
+# 1.9 · Now with type hints — best practice
 
 We introduced lists plainly. **From here on, annotate them.** A hint on a collection (`list[str]`, `list[list[str]]`) and on a function signature lets editors and tools catch mistakes *before* you run — for free.
 
@@ -103,7 +126,7 @@ def first_n(owners: list[str], n: int) -> list[str]:
 <!-- _class: section -->
 
 # Section 2 · Dicts & JSON
-## access → loop → functions → nested → JSON → with type hints
+## access → loop → functions → nested → grouping → JSON → the keys gotcha → type hints
 ---
 # 2.1 · Dict element access
 
@@ -147,7 +170,20 @@ acct = {"owner": "Ada",
 acct["address"]["city"]   # "Pune"
 ```
 ---
-# 2.5 · Save & load with JSON
+# 2.5 · Worked example — group by category
+
+A common real shape: bucket records under a key. Build a dict whose values are **lists**, appending as you loop — `setdefault` creates the empty list the first time.
+
+```python
+by_category = {}
+for p in products:
+    by_category.setdefault(p["category"], []).append(p)
+
+by_category["Electronics"]   # [ {USB-C Cable…}, {Keyboard…} ]
+list(by_category.keys())     # ['Electronics', 'Home', 'Fitness']
+```
+---
+# 2.6 · Save & load with JSON
 
 A dict maps exactly to **JSON**. `json.dump` writes it to disk; `json.load` reads it straight back **as a Python dict** — same shape, no parsing.
 
@@ -157,7 +193,18 @@ json.dump(acct, open("acct.json", "w"), indent=2)   # dict → file
 back = json.load(open("acct.json"))                  # file → dict again
 ```
 ---
-# 2.6 · Now with type hints
+# 2.7 · Gotcha — JSON keys are always strings
+
+JSON object keys can only be strings. Dump a store keyed by an **int** id, load it back, and the keys are now `"1", "2", "3"` — a lookup with the int `1` misses.
+
+```python
+json.dump({1: acct}, open("store.json", "w"))
+store = json.load(open("store.json"))
+list(store.keys())    # ['1']        ← "1", a string — not 1
+store[1]              # KeyError!    →  store["1"] works
+```
+---
+# 2.8 · Now with type hints
 
 Type a dict by its **key and value** types. Uniform values type precisely; our account **mixes** types, so the honest hint is `dict[str, object]` — and that vagueness is the signal that a fixed-field record wants a **class** (Module 3).
 
@@ -253,6 +300,49 @@ def fetch(store, id):
 ```
 
 <div class="code-along">▶ Code-along now → notebook Section 4 — add logging to the Section-3 storage functions</div>
+---
+<!-- _class: section -->
+
+# Section 5 · Revision
+## the four moves of data · what survives a round-trip · one combined example
+---
+# 5.1 · The four moves of data
+
+| Move | Tool |
+|---|---|
+| many things, in order | `list` · slice · comprehension |
+| named fields, by key | `dict` · `.get` · `.items` |
+| the flat, shareable file | **CSV** — strings only |
+| the typed, nested file | **JSON** — keeps lists & numbers |
+
+Plus: keep a **store** keyed by id, reach it through **functions**, and **log** every access.
+---
+# 5.2 · What survives a round-trip
+
+The same product, saved two ways. JSON round-trips **identically**; CSV turns everything to strings and drops the list.
+
+```python
+p = {"id": 1, "price": 499.0, "tags": ["cable"]}   # int · float · list
+
+save_json(p) → load_json()   # {"id": 1, "price": 499.0, "tags": ["cable"]}   ✓ identical
+save_csv(p)  → load_csv()    # {"id": "1", "price": "499.0"}   ✗ all strings, tags gone
+```
+---
+# 5.3 · One example, all four moves
+
+A **list** of product **dicts** → filter with a **comprehension** → persist as **JSON** (full fidelity) and **CSV** (flat).
+
+```python
+products = [make_product(1, "USB-C Cable", "Electronics", 499.0), ...]  # list of dicts (M1)
+cheap = [p for p in products if p["price"] < 1000]     # comprehension filter
+
+store = make_store(products)          # {id: product} keyed store (Section 3)
+save_json(store, "catalog.json")      # → JSON, keeps everything
+save_csv(store,  "catalog.csv")       # → CSV, scalar fields only
+load_json("catalog.json")             # round-trips identically
+```
+
+<div class="code-along">▶ Next → Lab 2 turns exactly this into `catalog/storage.py` — save & load, JSON & CSV.</div>
 ---
 <!-- _class: lab -->
 

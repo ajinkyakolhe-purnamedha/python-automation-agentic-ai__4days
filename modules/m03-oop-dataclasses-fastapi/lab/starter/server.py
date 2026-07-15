@@ -11,7 +11,6 @@ Done-signal: the TestServer class in tests/test_lab03.py.
 from __future__ import annotations
 
 import logging
-from dataclasses import asdict
 
 from fastapi import FastAPI, HTTPException
 
@@ -39,13 +38,13 @@ def health() -> dict:
 
 @app.get("/products")
 def list_products() -> list[dict]:
-    # TODO: [asdict(p) for p in catalog.list_all()]
+    # TODO: [p.to_dict() for p in catalog.list_all()]
     ...
 
 
 @app.get("/products/{product_id}")
 def get_product(product_id: int) -> dict:
-    # TODO: try: return asdict(catalog.get(product_id))
+    # TODO: try: return catalog.get(product_id).to_dict()
     #       except CatalogError as e: raise HTTPException(404, str(e))
     ...
 
@@ -54,7 +53,7 @@ def get_product(product_id: int) -> dict:
 def create_product(payload: dict) -> dict:
     # TODO: build Product(**payload)  (TypeError -> HTTPException(400, ...));
     #       catalog.add(new)          (CatalogError -> HTTPException(409, ...));
-    #       return asdict(new)
+    #       return new.to_dict()
     ...
 
 

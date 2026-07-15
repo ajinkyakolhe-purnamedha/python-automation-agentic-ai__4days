@@ -12,7 +12,7 @@ Your Lab 2 working folder (incl. `catalog/storage.py`). This lab adds `models.py
 
 ## You'll end with
 - `catalog/models.py` — `@dataclass Product`, `class ProductCatalog` (`add`/`get`/`delete`/`search_by_name`/`filter_by_price`/`list_all`/`__len__`)
-- `catalog/storage.py` — carried over; JSON/CSV now round-trip `Product` via `to_dict()` / `Product(**row)`
+- `catalog/storage.py` — `save_json` / `load_json` now round-trip `Product` objects via `to_dict()` / `Product(**row)`
 - `catalog/server.py` — FastAPI `app`: `GET /health`, `GET/POST /products`, `GET/DELETE /products/{id}`
 - A server at `http://localhost:8000` with `/docs`
 
@@ -23,13 +23,14 @@ cp ../../modules/m03-oop-dataclasses-fastapi/lab/starter/*.py catalog/   # run f
 | File | You write |
 |---|---|
 | `starter/models.py` | the `Product` fields + `ProductCatalog` method bodies |
+| `starter/storage.py` | `save_json` / `load_json` for `Product` objects (via `to_dict()`) |
 | `starter/server.py` | the five route bodies; map `CatalogError` → 404 / 409 / 400 |
 
 ## Steps
 
 1. **`Product` → `@dataclass`.** Typed fields; `in_stock: bool = True`; `tags: list[str] = field(default_factory=list)`. You get `__init__`, `__repr__`, `==` for free, and `p.price` replaces `p["price"]`.
 2. **Loose functions → methods** on `ProductCatalog`, over `self._items` (`{id: Product}`): `add` (`raise CatalogError` on negative price / duplicate id), `get`/`delete` (`raise CatalogError` if missing), `search_by_name`/`filter_by_price` (comprehensions). Persistence stays in `storage.py`: `save_json` writes `[p.to_dict() for p in catalog.list_all()]`; `load_json` rebuilds via `Product(**row)`.
-3. **FastAPI server.** Each `@app.get/post/delete` registers a route; return `asdict(product)` and FastAPI makes JSON. Map errors: missing → 404, duplicate → 409, bad body (`TypeError`) → 400.
+3. **FastAPI server.** Each `@app.get/post/delete` registers a route; return `p.to_dict()` and FastAPI makes JSON. Map errors: missing → 404, duplicate → 409, bad body (`TypeError`) → 400.
 4. **Run it.** Lab 3 adds FastAPI — the first real dependency, so sync once, then use `uv run`:
    ```bash
    uv sync                                        # creates .venv + installs deps (once)

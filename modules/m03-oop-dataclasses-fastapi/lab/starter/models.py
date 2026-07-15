@@ -2,7 +2,8 @@
 
 The Module-3 refactor: Lab 1/2's product-dicts and loose functions become a typed
 `@dataclass Product` and a `ProductCatalog` class whose **methods** are the old
-functions. This supersedes Lab 2's `storage.py` (the class now owns persistence too).
+functions. The class owns the data + queries; `storage.py` keeps handling JSON
+persistence (now for Product objects — see storage.py).
 
 Copy into your `catalog/` package and fill every `# TODO`.
 Done-signal: uv run pytest tests/test_lab03.py -v goes green.
@@ -10,10 +11,8 @@ Done-signal: uv run pytest tests/test_lab03.py -v goes green.
 
 from __future__ import annotations
 
-import json
 import logging
-from dataclasses import dataclass, field, asdict
-from pathlib import Path
+from dataclasses import asdict, dataclass, field
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +24,11 @@ class CatalogError(Exception):
 @dataclass
 class Product:
     # TODO: typed fields — id:int, name:str, category:str, price:float,
-    #       in_stock:bool=True, tags:list[str]=field(default_factory=list)
-    ...
+    #       in_stock:bool = True, tags:list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        """Serialise to a plain dict. (Day 2's Pydantic model swaps this for model_dump().)"""
+        return asdict(self)
 
 
 class ProductCatalog:
@@ -65,15 +67,3 @@ class ProductCatalog:
     def __len__(self) -> int:
         # TODO: how many products are stored?
         ...
-
-    def save_json(self, path: str | Path) -> None:
-        # TODO: write [asdict(p) for p in self.list_all()] as JSON, indent=2
-        ...
-
-
-def load_json(path: str | Path) -> ProductCatalog:
-    """Build a ProductCatalog from a JSON file (missing file -> empty catalog)."""
-    # TODO: if not Path(path).exists(): return ProductCatalog()
-    #       rows = json.loads(Path(path).read_text())
-    #       return ProductCatalog([Product(**row) for row in rows])
-    ...

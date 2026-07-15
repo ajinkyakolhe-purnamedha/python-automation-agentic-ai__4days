@@ -215,7 +215,7 @@
       <p class="kicker">Acuity · Day 1 · Module 2</p>
       <h1><span class="grad">Lists, Dicts</span> &amp; Files</h1>
       <h2>Many accounts — saved to files that survive a restart</h2>
-      <p class="metaline"><b>4 sections</b> · ~40 min · Lab 2</p>
+      <p class="metaline"><b>5 sections</b> · ~50 min · Lab 2</p>
     </section>
 
     <section class="slide">
@@ -234,7 +234,7 @@
         <div class="secmeta">
           <p class="eyebrow">Section</p>
           <h1>Lists &amp; CSV</h1>
-          <div class="sub">elements → slice → loop → comprehension → CSV → with type hints</div>
+          <div class="sub">elements → slice → loop → comprehensions → CSV → the type-loss gotcha → type hints</div>
         </div>
       </div>
     </section>
@@ -274,29 +274,50 @@ with_a = [n for n in owners if n.startswith("A")]  # filter   → ['Ada']</code>
     </section>
 
     <section class="slide">
-      <p class="eyebrow">1.5 · A CSV row is a list</p>
-      <h1 class="h">The most common real-world data</h1>
-      <p class="lead">Read a CSV with <code class="inl">csv.reader</code> — <strong>each row comes back as a list</strong> of strings.</p>
-<pre class="code"><code class="py">import csv
-for row in csv.reader(open("accounts.csv")):
-    row    # ['1', 'Ada', '1500.0']  — a list; every value is a str</code></pre>
+      <p class="eyebrow">1.5 · Comprehension patterns</p>
+      <h1 class="h">A few shapes you'll reuse all day</h1>
+      <p class="lead">Pluck a field, filter rows, transform each, or combine filter + transform — all one-liners over a list of product dicts.</p>
+<pre class="code"><code class="py">names    = [p["name"] for p in products]                    # pluck one field
+cheap    = [p for p in products if p["price"] &lt; 500]        # filter rows
+labels   = [f'{p["name"]} — ₹{p["price"]}' for p in products]  # transform each
+on_sale  = [p["name"] for p in products if p["in_stock"]]   # filter + transform</code></pre>
     </section>
 
     <section class="slide">
-      <p class="eyebrow">1.6 · Reading a CSV file</p>
+      <p class="eyebrow">1.6 · A CSV row is a list</p>
+      <h1 class="h">The most common real-world data</h1>
+      <p class="lead">Read a CSV with <code class="inl">csv.reader</code> — <strong>each row comes back as a list</strong> of strings.</p>
+<pre class="code"><code class="py">import csv
+for row in csv.reader(open("products.csv")):
+    row    # ['1', 'USB-C Cable', '499.0']  — a list; every value is a str</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">1.7 · Reading a CSV file</p>
       <h1 class="h">Header is just the first row</h1>
       <p class="lead">Split it off and loop the rest, or let <code class="inl">DictReader</code> pair each value with its column name.</p>
-<pre class="code"><code class="py">rows = list(csv.reader(open("accounts.csv")))
+<pre class="code"><code class="py">rows = list(csv.reader(open("products.csv")))
 header, data = rows[0], rows[1:]        # header row vs the data rows
 # or: csv.DictReader(...) -&gt; each row a dict keyed by header (→ Section 2)</code></pre>
     </section>
 
     <section class="slide">
-      <p class="eyebrow">1.7 · Now with type hints — best practice</p>
+      <p class="eyebrow">1.8 · Gotcha — CSV is the type-loss format</p>
+      <h1 class="h">Every cell reads back a string</h1>
+      <p class="lead">Write with <code class="inl">DictWriter</code>, read with <code class="inl">DictReader</code> — but numbers and bools come back as <strong>text</strong>, and a list field can't fit a flat cell at all.</p>
+<pre class="code"><code class="py">row = next(csv.DictReader(open("products.csv")))
+row["price"]          # "499.0"   ← a string, not a float!
+float(row["price"])   # 499.0     ← you must coerce it back yourself
+row["in_stock"]       # "True"    ← a string too — "True" == True is False
+# tags (a list) doesn't fit one cell → JSON is the format that keeps lists</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">1.9 · Now with type hints — best practice</p>
       <h1 class="h">From here on, annotate them</h1>
       <p class="lead">A hint on a collection (<code class="inl">list[str]</code>, <code class="inl">list[list[str]]</code>) and on a signature lets tools catch mistakes <em>before</em> you run — for free.</p>
 <pre class="code"><code class="py">owners: list[str] = ["Ada", "Lin", "Sam"]
-rows: list[list[str]] = list(csv.reader(open("accounts.csv")))
+rows: list[list[str]] = list(csv.reader(open("products.csv")))
 
 def first_n(owners: list[str], n: int) -&gt; list[str]:
     return owners[:n]</code></pre>
@@ -311,7 +332,7 @@ def first_n(owners: list[str], n: int) -&gt; list[str]:
         <div class="secmeta">
           <p class="eyebrow">Section</p>
           <h1>Dicts &amp; JSON</h1>
-          <div class="sub">access → loop → functions → nested → JSON → with type hints</div>
+          <div class="sub">access → loop → functions → nested → grouping → JSON → the keys gotcha → type hints</div>
         </div>
       </div>
     </section>
@@ -355,7 +376,19 @@ acct["address"]["city"]   # "Pune"</code></pre>
     </section>
 
     <section class="slide">
-      <p class="eyebrow">2.5 · Save &amp; load with JSON</p>
+      <p class="eyebrow">2.5 · Worked example — group by category</p>
+      <h1 class="h">A dict of lists</h1>
+      <p class="lead">A common real shape: bucket records under a key. Build a dict whose values are <strong>lists</strong>, appending as you loop — <code class="inl">setdefault</code> creates the empty list the first time.</p>
+<pre class="code"><code class="py">by_category = {}
+for p in products:
+    by_category.setdefault(p["category"], []).append(p)
+
+by_category["Electronics"]   # [ {USB-C Cable…}, {Keyboard…} ]
+list(by_category.keys())     # ['Electronics', 'Home', 'Fitness']</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">2.6 · Save &amp; load with JSON</p>
       <h1 class="h">A dict maps exactly to JSON</h1>
       <p class="lead"><code class="inl">json.dump</code> writes it to disk; <code class="inl">json.load</code> reads it straight back <strong>as a Python dict</strong> — same shape, no parsing.</p>
 <pre class="code"><code class="py">import json
@@ -364,7 +397,17 @@ back = json.load(open("acct.json"))                  # file → dict again</code
     </section>
 
     <section class="slide">
-      <p class="eyebrow">2.6 · Now with type hints</p>
+      <p class="eyebrow">2.7 · Gotcha — JSON keys are always strings</p>
+      <h1 class="h">Your int ids come back as text</h1>
+      <p class="lead">JSON object keys can only be strings. Dump a store keyed by <strong>int</strong> id, load it back, and the keys are now <code class="inl">"1", "2", "3"</code> — a lookup with the int <code class="inl">1</code> misses.</p>
+<pre class="code"><code class="py">json.dump({1: acct}, open("store.json", "w"))
+store = json.load(open("store.json"))
+list(store.keys())    # ['1']        ← "1", a string — not 1
+store[1]              # KeyError!    →  store["1"] works</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">2.8 · Now with type hints</p>
       <h1 class="h">Mixed values stay vague — on purpose</h1>
       <p class="lead">Uniform values type precisely; our account <strong>mixes</strong> types, so the honest hint is <code class="inl">dict[str, object]</code> — and that vagueness is the signal a fixed-field record wants a <strong>class</strong> (Module 3).</p>
 <pre class="code"><code class="py">balances: dict[str, float] = {"Ada": 1500.0, "Lin": 800.0}             # uniform → precise
@@ -463,6 +506,55 @@ log.info("started")     # shown · log.debug("...") hidden at INFO</code></pre>
     log.info("fetch id=%s", id)     # %s args, not an f-string
     return store[id]</code></pre>
       <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 4</b> — add logging to the Section-3 storage functions</div></div>
+    </section>
+
+    <section class="slide section">
+      <span class="ghost">5</span>
+      <div class="secrow">
+        <div class="secnum">5</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>Revision</h1>
+          <div class="sub">the four moves of data · what survives a round-trip · one combined example</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">5.1 · The four moves of data</p>
+      <h1 class="h">Everything, at a glance</h1>
+      <table class="moves">
+        <tr><td>many things, in order</td><td class="tool">list · slice · comprehension</td></tr>
+        <tr><td>named fields, by key</td><td class="tool">dict · .get · .items</td></tr>
+        <tr><td>the flat, shareable file</td><td class="tool">CSV — strings only</td></tr>
+        <tr><td>the typed, nested file</td><td class="tool">JSON — keeps lists &amp; numbers</td></tr>
+      </table>
+      <p class="lead soft">Plus: keep a <strong>store</strong> keyed by id, reach it through <strong>functions</strong>, and <strong>log</strong> every access.</p>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">5.2 · What survives a round-trip</p>
+      <h1 class="h">JSON keeps types; CSV flattens them</h1>
+      <p class="lead">The same product, saved two ways. JSON round-trips <strong>identically</strong>; CSV turns everything to strings and drops the list.</p>
+<pre class="code"><code class="py">p = {"id": 1, "price": 499.0, "tags": ["cable"]}   # int · float · list
+
+save_json(p) → load_json()   # {"id": 1, "price": 499.0, "tags": ["cable"]}   ✓ identical
+save_csv(p)  → load_csv()    # {"id": "1", "price": "499.0"}   ✗ all strings, tags gone</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">5.3 · One example, all four moves</p>
+      <h1 class="h">From a list to two files</h1>
+      <p class="lead">A <strong>list</strong> of product <strong>dicts</strong> → filter with a <strong>comprehension</strong> → persist as <strong>JSON</strong> (full fidelity) and <strong>CSV</strong> (flat).</p>
+<pre class="code"><code class="py">products = [make_product(1, "USB-C Cable", "Electronics", 499.0), ...]  # list of dicts (M1)
+cheap = [p for p in products if p["price"] &lt; 1000]     # comprehension filter
+
+store = make_store(products)          # {id: product} keyed store (Section 3)
+save_json(store, "catalog.json")      # → JSON, keeps everything
+save_csv(store,  "catalog.csv")       # → CSV, scalar fields only
+load_json("catalog.json")             # round-trips identically</code></pre>
+      <div class="along"><span class="play">→</span><div>Next → <b>Lab 2</b> turns exactly this into <code>catalog/storage.py</code> — save &amp; load, JSON &amp; CSV.</div></div>
     </section>
 
     <section class="slide lab">
