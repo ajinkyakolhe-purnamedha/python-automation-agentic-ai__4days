@@ -51,6 +51,17 @@ PRODUCTS = [
      "price": 5499.0, "in_stock": True, "tags": ["mech"]},
 ]
 
+# Spans three categories (one of them a single item) so count_by_category has
+# something real to group — PRODUCTS above is all-Electronics on purpose.
+MIXED_PRODUCTS = PRODUCTS + [
+    {"id": 3, "name": "Bottle", "category": "Home",
+     "price": 899.0, "in_stock": True, "tags": []},
+    {"id": 4, "name": "Yoga Mat", "category": "Fitness",
+     "price": 1299.0, "in_stock": False, "tags": []},
+    {"id": 5, "name": "Lamp", "category": "Home",
+     "price": 1499.0, "in_stock": True, "tags": []},
+]
+
 
 class TestAPIClient:
     def test_apierror_exposes_status_and_detail(self):
@@ -76,6 +87,18 @@ class TestAPIClient:
         result = client.create_product(payload)
         assert isinstance(result, models.Product)   # not a raw dict
         assert result.id == 1
+
+    def test_count_by_category_groups_the_catalog(self):
+        c = pytest.importorskip("catalog.client")
+        pytest.importorskip("catalog.models")
+        client = c.APIClient(session=_FakeSession([_FakeResponse(200, MIXED_PRODUCTS)]))
+        assert client.count_by_category() == {"Electronics": 2, "Home": 2, "Fitness": 1}
+
+    def test_count_by_category_on_an_empty_catalog(self):
+        c = pytest.importorskip("catalog.client")
+        pytest.importorskip("catalog.models")
+        client = c.APIClient(session=_FakeSession([_FakeResponse(200, [])]))
+        assert client.count_by_category() == {}   # no products, no categories — not a crash
 
     def test_non_2xx_raises_apierror(self):
         c = pytest.importorskip("catalog.client")

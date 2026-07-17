@@ -1,6 +1,6 @@
 # Lab 5 — Build the `APIClient`
 
-**Duration:** ~60 min · **Day:** 2 · **Module:** 5 (REST APIs with `requests`)
+**Duration:** ~70 min · **Day:** 2 · **Module:** 5 (REST APIs with `requests`)
 
 > **Concepts used:** `requests.Session`, the `_request` funnel, the retry loop, typed returns → `../codealong-m05-rest-requests.ipynb`.
 > Applies the module's `AccountClient` concepts to `Product` — same patterns, different domain.
@@ -10,10 +10,10 @@ Build a typed `APIClient`: one `_request` funnel that wraps `requests`, a retry 
 
 ## You start with
 - Lab 4 end-state — Pydantic-typed `Product` + FastAPI server.
-- `starter/client.py` — `APIError`, `__init__`, `_extract_detail`, and `health`/`get_product`/`delete_product` **already written** as worked examples; you fill three `# TODO` bodies.
+- `starter/client.py` — `APIError`, `__init__`, `_extract_detail`, and `health`/`get_product`/`delete_product` **already written** as worked examples; you fill four `# TODO` bodies.
 
 ## You'll end with
-- `catalog/client.py` — `APIClient` + `APIError`, typed `list_products() -> list[Product]` and `create_product(...) -> Product`, with one retry loop in the funnel covering every call
+- `catalog/client.py` — `APIClient` + `APIError`, typed `list_products() -> list[Product]` and `create_product(...) -> Product`, `count_by_category() -> dict`, with one retry loop in the funnel covering every call
 
 ## Starter files
 ```bash
@@ -22,7 +22,7 @@ cp ../../modules/m05-rest-requests/lab/starter/*.py catalog/   # run from capsto
 
 | File | You write |
 |---|---|
-| `starter/client.py` | bodies of `_request`, `list_products`, `create_product`. The `FakeSession`/`FakeResponse` helpers at the bottom are **given** — they let you run with no server. |
+| `starter/client.py` | bodies of `_request`, `list_products`, `create_product`, `count_by_category`. The `FakeSession`/`FakeResponse` helpers at the bottom are **given** — they let you run with no server. |
 
 ## Steps
 
@@ -33,7 +33,7 @@ cp ../../modules/m05-rest-requests/lab/starter/*.py catalog/   # run from capsto
    - **Send, up to `RETRY_TIMES` times** — through **`self._session`**, never `requests.get`: the session carries the headers, and the tests hand you a fake one. Stop looping the moment you get a response. On a `TRANSIENT_ERRORS` fault, give up only on the last attempt; otherwise `time.sleep(RETRY_DELAY)` and go again.
    - **Check** — a non-2xx becomes `APIError(status, detail)`; the given `_extract_detail` gets you the detail.
 
-   The design question worth pausing on: **where does that last job go, relative to the loop?** A 4xx must never be retried (§1.2), and it's the *placement* that guarantees it — not a comment.
+   The design question worth pausing on: **where does that last job go, relative to the loop?** A 4xx must never be retried (§1.4), and it's the *placement* that guarantees it — not a comment.
 
    The given `get_product` is the template every typed method repeats:
    ```python
@@ -46,7 +46,13 @@ cp ../../modules/m05-rest-requests/lab/starter/*.py catalog/   # run from capsto
 
 3. **`create_product` — POSTing.** `requests` wants the body as `json=<a dict>`, and what you hold is a `Product` — convert it (module-4 §3.2). The server echoes the created product back, so finish exactly like `get_product`: validate that response into a `Product`.
 
-4. **Drive it — no server needed.** Inject the given `FakeSession`. Start a REPL with `uv run python` (so the venv's deps are on the path), then:
+4. **`count_by_category` — the same question, one layer out.** Return `{"Electronics": 2, "Home": 1}`. You already wrote this: Lab 3's `ProductCatalog.group_by_category()` walked a dict you owned in memory. This walks the same catalog **over HTTP** — and the counting code doesn't change at all. That's the lesson: the data moved to another machine and your logic didn't notice.
+
+   Build it on `list_products()`, not on `_request` — the Products it hands back are already validated, so `.category` is safe to read. Then count them (M1's `dict.get(key, 0)`, or `collections.Counter`). An empty catalog must give you `{}`, not a crash.
+
+   On Day 4, the agent calls this to answer *"how many electronics do we have?"* — **your method is the tool.**
+
+5. **Drive it — no server needed.** Inject the given `FakeSession`. Start a REPL with `uv run python` (so the venv's deps are on the path), then:
    ```python
    from catalog.client import APIClient, FakeSession, FakeResponse, SAMPLE_PRODUCTS
    c = APIClient(session=FakeSession([FakeResponse(200, SAMPLE_PRODUCTS)]))
@@ -55,7 +61,7 @@ cp ../../modules/m05-rest-requests/lab/starter/*.py catalog/   # run from capsto
 
 ## Expected output
 
-No server needed — the given `FakeSession` answers every call. Three things prove the client works:
+No server needed — the given `FakeSession` answers every call. Four things prove the client works:
 
 ```python
 >>> c = APIClient(session=FakeSession([FakeResponse(200, SAMPLE_PRODUCTS)]))
@@ -80,6 +86,13 @@ APIError: 409: Product id 1 already exists       # .status_code == 409
 ```
 **The retry loop rode out two dropped connections** — and `s.calls == 3` proves it actually re-sent.
 
+```python
+>>> c = APIClient(session=FakeSession([FakeResponse(200, SAMPLE_PRODUCTS)]))
+>>> c.count_by_category()
+{'Electronics': 2}
+```
+**Lab 3's `group_by_category()`, now over the wire** — same counting code, remote catalog. This is the method the Day-4 agent calls as a tool.
+
 ## Make it pass
 
 ```bash
@@ -94,6 +107,7 @@ Skips until `client.py` exists, then red → green. Target: `TestAPIClient` gree
 - A bare `except Exception` in the loop retries a 4xx too — catch `TRANSIENT_ERRORS` only.
 - Forgetting the `break` after a successful `request(...)` — you'd re-send every call `RETRY_TIMES` times.
 - Forgetting `timeout` — a hung server hangs your script forever.
+- Building `count_by_category` on `_request` instead of `list_products` — you'd be re-parsing raw dicts you already have as validated `Product`s one method up.
 
 ## Stretch (optional)
 - Add `auth_token: Optional[str] = None` to `__init__` and inject `Authorization: Bearer …` on every request.

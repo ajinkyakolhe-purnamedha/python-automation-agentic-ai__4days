@@ -1,5 +1,4 @@
 <meta charset="utf-8">
-<meta charset="utf-8">
 <title>Module 5 · REST API Client — Acuity Day 2</title>
 <style>
   :root{
@@ -217,16 +216,21 @@
       <p class="kicker">Acuity · Day 2 · Module 5</p>
       <h1>REST API <span class="grad">Client</span></h1>
       <h2>Now write the Python program that <b>calls</b> your server — and validates every response back into an M4 model.</h2>
-      <p class="metaline"><b>2 sections</b> · ~40 min · Lab 5</p>
+      <p class="metaline"><b>3 sections</b> · ~50 min · Lab 5</p>
     </section>
 
     <section class="slide">
       <p class="eyebrow">The through-line</p>
-      <h1 class="h">Drive the server from Python</h1>
-      <p class="lead">M4 gave us <strong>validated models</strong> and a <strong>typed server</strong>. Now the caller: an <code class="inl">APIClient</code> whose methods hand back real objects, not raw dicts.</p>
-<pre class="code"><code class="py">client = AccountClient(base_url="http://localhost:8000")
-accounts = client.list_accounts()   # list[BankAccount] — parsed &amp; validated</code></pre>
-      <p class="lead soft">Along the way we make it <strong>resilient</strong> — one retry loop, in one place, so a dropped connection doesn't kill a bulk run. On Day 4, these methods literally <em>become</em> the agent's tools.</p>
+      <h1 class="h">The five-line client</h1>
+      <p class="lead">M4 gave us <strong>validated models</strong> and a <strong>typed server</strong>. Here's the Python that drives it:</p>
+<pre class="code"><code class="py">accounts = requests.get("http://localhost:8000/accounts").json()</code></pre>
+      <p class="lead"><strong>It works.</strong> Ship it? — It also <strong>lies to you</strong>, three ways. Each section today kills one:</p>
+      <table class="moves">
+        <tr><td class="tool">§1 · it can't tell you it <span class="no">failed</span></td><td><code>.json()</code> on a 404 hands you an <b>error body wearing data's clothes</b></td></tr>
+        <tr><td class="tool">§2 · it hangs · it forgets you</td><td>no <code>timeout</code> = <b>forever</b>; a bare <code>get()</code> forgets your headers every call</td></tr>
+        <tr><td class="tool">§3 · it trusts the <span class="no">shape</span></td><td>a dict off the wire <b>is not</b> a <code>BankAccount</code></td></tr>
+      </table>
+      <p class="lead soft">By the end it's an <code class="inl">APIClient</code> you'd trust at 3am — and on <strong>Day 4, these methods become the agent's tools.</strong></p>
     </section>
 
     <section class="slide section">
@@ -236,8 +240,8 @@ accounts = client.list_accounts()   # list[BankAccount] — parsed &amp; validat
         <div class="secdiv"></div>
         <div class="secmeta">
           <p class="eyebrow">Section</p>
-          <h1>HTTP with requests</h1>
-          <div class="sub">verbs → status codes → where's the await? → Session + timeout → auth<br><b>Why now:</b> the rules first — §2 is where you enforce them, and you can't enforce what you can't name.</div>
+          <h1>The HTTP request</h1>
+          <div class="sub">verbs → the status-code map → the 404 that doesn't raise → the retry rule<br><b>The lie we kill:</b> <em>"it can't tell you it failed."</em> Learn to name what the server actually said — §3 enforces it, and you can't enforce what you can't name.</div>
         </div>
       </div>
     </section>
@@ -248,20 +252,62 @@ accounts = client.list_accounts()   # list[BankAccount] — parsed &amp; validat
       <p class="lead">A retry <strong>re-sends the identical request</strong> — so the only question is: <em>does sending it twice do harm?</em> <strong>Idempotent</strong> = same end state no matter how many sends.</p>
 <pre class="map"> DELETE /accounts/5   ×2  → still just "deleted"   <b>(idempotent → safe)</b>
  POST   /accounts {…} ×2  → TWO accounts created   <b>(not idempotent)</b></pre>
-      <p class="lead soft"><code class="inl">GET</code>/<code class="inl">PUT</code>/<code class="inl">DELETE</code> are idempotent; <code class="inl">POST</code> isn't. Hold that thought — §2.2 has to answer for it.</p>
+      <p class="lead soft"><code class="inl">GET</code>/<code class="inl">PUT</code>/<code class="inl">DELETE</code> are idempotent; <code class="inl">POST</code> isn't. Hold that thought — §3.3 has to answer for it.</p>
     </section>
 
     <section class="slide">
-      <p class="eyebrow">1.2 · Status codes</p>
+      <p class="eyebrow">1.2 · The status-code map</p>
+      <h1 class="h">You wrote most of this table</h1>
+      <p class="lead">Three families: <strong>2xx</strong> you're fine · <strong>4xx</strong> <em>you</em> broke it · <strong>5xx</strong> <em>they</em> broke it. Then the ones you'll actually meet:</p>
+      <table class="moves">
+        <tr><td class="tool">200 · 201 · 204</td><td>OK · Created (<code>@app.post(..., status_code=201)</code>) · No Content (<code>@app.delete</code>)</td></tr>
+        <tr><td class="tool">401 <span class="no">vs</span> 403</td><td><b>"who are you?"</b> vs <b>"I know who you are — no."</b></td></tr>
+        <tr><td class="tool">404 · 409</td><td>your <code>CatalogError</code> → 404 · your <b>duplicate-id</b> rule → 409</td></tr>
+        <tr><td class="tool">422</td><td>FastAPI's automatic <b>Pydantic</b> error — M4's whole payoff</td></tr>
+        <tr><td class="tool">500 · 503</td><td>the server stumbled — a retry might win (§1.4)</td></tr>
+      </table>
+      <p class="lead soft">201, 204, 404, 409 and 422 all come out of the server <em>you</em> built in Labs 3–4. This is a <strong>callback</strong>, not new vocabulary.</p>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">1.3 · The one that surprises everyone</p>
+      <h1 class="h">A 404 doesn't raise</h1>
+      <p class="lead">The request <strong>succeeded</strong> — the server heard you and said <em>no</em>. <code class="inl">requests</code> has nothing to complain about, so it stays quiet.</p>
+<pre class="code"><code class="py">r = session.get(f"{url}/accounts/99")   # no such account
+# ...nothing raised. The round trip worked.
+r.status_code            # 404
+r.ok                     # False
+r.json()                 # {'detail': 'Account 99 not found'}
+
+r.raise_for_status()     # NOW it raises — requests.HTTPError</code></pre>
+      <p class="lead soft">An <strong>exception</strong> means the round trip itself failed (<code class="inl">ConnectionError</code>, <code class="inl">Timeout</code>) — §1.4's retry case. A <strong>status code</strong> means it worked and you didn't like the answer. So you must <em>choose</em> to care: check <code class="inl">.ok</code>, or call <code class="inl">raise_for_status()</code>.</p>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 1</b> — read a status code; watch a 404 not raise</div></div>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">1.4 · Why retry hinges on the code</p>
       <h1 class="h">Who broke — you, or the server?</h1>
       <p class="lead">A <strong>4xx</strong> means the server <em>understood you and refused</em>: your request is wrong, so sending it again earns the same refusal, forever. A <strong>5xx</strong> or a dropped connection is the server <em>stumbling</em> — the same request might work a moment later.</p>
 <pre class="map"> POST {bad json} → 422 → retry → 422 → 422 …   <b>never recovers</b>
  GET  /accounts  → 503 → retry → 200           <b>retry won</b></pre>
-      <p class="lead soft">So: <strong>retry 5xx + network errors, never 4xx.</strong> That one line is the whole policy — §2.2 makes the code obey it.</p>
+      <p class="lead soft">So: <strong>retry 5xx + network errors, never 4xx.</strong> That one line is the whole policy — §3.2 makes the code obey it.</p>
+    </section>
+
+    <section class="slide section">
+      <span class="ghost">2</span>
+      <div class="secrow">
+        <div class="secnum">2</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>requests</h1>
+          <div class="sub">where's the await? → Session + timeout → json= a body → auth<br><b>The lie we kill:</b> <em>"it hangs, and it forgets who you are."</em> Configure the boundary <b>once</b> — one connection, one timeout, one header.</div>
+        </div>
+      </div>
     </section>
 
     <section class="slide">
-      <p class="eyebrow">1.3 · Wait — where's the await?</p>
+      <p class="eyebrow">2.1 · Wait — where's the await?</p>
       <h1 class="h">There isn't one. That's not a typo.</h1>
       <p class="lead">You're about to see <code class="inl">resp = session.get(url)</code> with <strong>no <code class="inl">await</code></strong>. <code class="inl">requests</code> is <strong>blocking</strong>: the line stops, waits for the server, then hands you the answer.</p>
 <pre class="code"><code class="py"># JS — the network is always async
@@ -273,7 +319,7 @@ r = session.get(url);        data = r.json()</code></pre>
     </section>
 
     <section class="slide">
-      <p class="eyebrow">1.3b · Python has async too</p>
+      <p class="eyebrow">2.2 · Python has async too</p>
       <h1 class="h">It's a choice, not an absence</h1>
       <p class="lead">Async HTTP exists — <code class="inl">httpx</code>, <code class="inl">aiohttp</code> — and you'd reach for it when one process must hold <strong>thousands</strong> of connections at once. That's a server's problem, not ours.</p>
 <pre class="code"><code class="py">async def main():                       # the async flavour, for reference
@@ -284,17 +330,27 @@ r = session.get(url);        data = r.json()</code></pre>
     </section>
 
     <section class="slide">
-      <p class="eyebrow">1.4 · Session + timeout</p>
+      <p class="eyebrow">2.3 · Session + timeout</p>
       <h1 class="h">One connection, and never wait forever</h1>
       <p class="lead">Each bare <code class="inl">requests.get(...)</code> opens a <strong>new</strong> TCP connection and forgets your headers. A <code class="inl">Session</code> keeps one alive and carries them — it is <strong><code class="inl">axios.create({ baseURL, headers })</code></strong>: configure once, reuse everywhere. And <strong><code class="inl">timeout</code> is not optional</strong> — omit it and a server that never replies blocks your thread <em>forever</em>.</p>
 <pre class="code"><code class="py">s = requests.Session()       # one connection, reused; headers remembered
 s.get(url)                   # ⚠️ no timeout → hangs forever if the server stalls
 s.get(url, timeout=5)        # ✓ raises after 5s instead of hanging</code></pre>
-      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 1</b> — a Session with timeout + auth; read a status code</div></div>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 2</b> — a Session with timeout, a JSON body, and auth</div></div>
     </section>
 
     <section class="slide">
-      <p class="eyebrow">1.5 · Auth</p>
+      <p class="eyebrow">2.4 · Sending a body</p>
+      <h1 class="h"><code class="inl">json=</code> is two jobs, not one</h1>
+      <p class="lead">It serialises the body <strong>and</strong> sets <code class="inl">Content-Type: application/json</code>. <code class="inl">data=</code> form-encodes instead — and FastAPI won't parse that as JSON.</p>
+<pre class="code"><code class="py">s.post(url, json={"owner": "Ada", "balance": 1500})   # ✓ body + Content-Type, both handled
+s.post(url, data={"owner": "Ada", "balance": 1500})   # ✗ form-encoded → FastAPI can't read it → 422</code></pre>
+      <div class="along"><span class="play">↩</span><div><b>You've met this — from the other side.</b> Lab 4 told you to keep <code>-H 'Content-Type: application/json'</code> on that curl, or you'd get "a 422, but for the boring reason". <b>json= <em>is</em> that header</b>, in Python.</div></div>
+      <p class="lead soft">Lab 5's <code class="inl">create_product</code> is exactly this move: <code class="inl">json=payload.model_dump()</code>.</p>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">2.5 · Auth</p>
       <h1 class="h">A token in a header, from the environment</h1>
       <p class="lead">Auth is just a header you set <strong>once</strong> on the session; every later call carries it. The trap is <em>where the secret lives</em> — a token in the URL lands in server logs and browser history; a token in source lands in git. Both leak forever.</p>
 <pre class="code"><code class="py"># ❌ token in the URL → logged everywhere it travels
@@ -304,20 +360,20 @@ s.headers["Authorization"] = f"Bearer {os.environ['TOKEN']}"</code></pre>
     </section>
 
     <section class="slide section">
-      <span class="ghost">2</span>
+      <span class="ghost">3</span>
       <div class="secrow">
-        <div class="secnum">2</div>
+        <div class="secnum">3</div>
         <div class="secdiv"></div>
         <div class="secmeta">
           <p class="eyebrow">Section</p>
           <h1>The APIClient</h1>
-          <div class="sub">_request funnel → the retry loop → typed/validated returns<br><b>Why now:</b> §1 gave the rules — one funnel is where you enforce all of them at once.</div>
+          <div class="sub">_request funnel → the retry loop → typed/validated returns<br><b>The lie we kill:</b> <em>"it trusts whatever shape comes back."</em> One funnel — and every lie above dies in the same five lines.</div>
         </div>
       </div>
     </section>
 
     <section class="slide">
-      <p class="eyebrow">2.1 · One _request funnel</p>
+      <p class="eyebrow">3.1 · One _request funnel</p>
       <h1 class="h">Write it once, or get it wrong five times</h1>
       <p class="lead">Five CRUD methods each repeating url-join + timeout + error-check = five places to slip (and one route quietly missing a timeout). Funnel it: every public method becomes a one-liner that <em>can't</em> forget.</p>
 <pre class="code"><code class="py">def _request(self, method, path, **kw):
@@ -327,11 +383,12 @@ s.headers["Authorization"] = f"Bearer {os.environ['TOKEN']}"</code></pre>
     return resp
 
 def delete_account(self, id):  self._request("DELETE", f"/accounts/{id}")   # one line</code></pre>
+      <p class="lead soft">That <code class="inl">if not resp.ok</code> is <strong>§1.3 paying off</strong> — a 404 won't raise itself, so the funnel raises for it. One check, and no caller ever imports <code class="inl">requests</code>.</p>
     </section>
 
     <section class="slide">
-      <p class="eyebrow">2.2 · The retry loop</p>
-      <h1 class="h">§1.2's rule, made structural</h1>
+      <p class="eyebrow">3.2 · The retry loop</p>
+      <h1 class="h">§1.4's rule, made structural</h1>
       <p class="lead">Because <em>every</em> call funnels through <code class="inl">_request</code>, the retry goes in <strong>one place</strong>. Look at what the <code class="inl">except</code> catches: <strong>only</strong> network faults. A 4xx never reaches it — it becomes an <code class="inl">APIError</code>, raised <em>after</em> the loop. The rule isn't a convention here; it's the shape of the code.</p>
 <pre class="code"><code class="py">for attempt in range(1, 4):
     try:
@@ -346,7 +403,7 @@ if not resp.ok:
     </section>
 
     <section class="slide">
-      <p class="eyebrow">2.2b · The honest caveat</p>
+      <p class="eyebrow">3.3 · The honest caveat</p>
       <h1 class="h">But §1.1 said POST isn't idempotent…</h1>
       <p class="lead">Right — and this loop retries <em>every</em> verb, <code class="inl">create_product</code> included. A timeout can mean <strong>the server did the work and the reply got lost</strong>; retrying then sends it twice. We accept that here for one specific reason:</p>
 <pre class="map"> our ids are <b>client-supplied</b> → a double POST hits the
@@ -356,32 +413,34 @@ if not resp.ok:
     </section>
 
     <section class="slide">
-      <p class="eyebrow">2.3 · Typed returns</p>
+      <p class="eyebrow">3.4 · Typed returns</p>
       <h1 class="h">Validate at the boundary</h1>
       <p class="lead">Return the raw dict and a server that drops <code class="inl">balance</code> blows up <em>three functions later</em>, mysteriously. Parse into the <strong>M4 model</strong> right here — a bad response fails <strong>now</strong>, with a field-level error, and callers get real objects.</p>
 <pre class="code"><code class="py">def list_accounts(self) -> list[BankAccount]:
     data = self._request("GET", "/accounts").json()       # list of dicts off the wire
     return [BankAccount.model_validate(r) for r in data]  # validated → fails here if malformed</code></pre>
       <p class="lead soft">This is what <strong>"validating API responses"</strong> means in practice.</p>
-      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 2</b> — build AccountClient: _request, the retry loop, Pydantic returns</div></div>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 3</b> — build AccountClient: _request, the retry loop, Pydantic returns</div></div>
     </section>
 
     <section class="slide lab">
-      <span class="labtag">🧪 LAB 5 · 60 MIN</span>
+      <span class="labtag">🧪 LAB 5 · 70 MIN</span>
       <h1>Build the APIClient</h1>
       <p class="lead">Open <code class="inl">modules/m05-rest-requests/lab/README.md</code> · scaffolds in <code class="inl">starter/</code></p>
       <ul class="clean">
         <li><code class="inl">catalog/client.py</code> — <code class="inl">APIClient</code> + <code class="inl">APIError</code>, one <code class="inl">_request</code> funnel</li>
         <li>the retry loop inside it — transient faults only, never a 4xx</li>
         <li>typed CRUD: <code class="inl">list</code> / <code class="inl">get</code> / <code class="inl">create</code> / <code class="inl">delete</code> → validated <code class="inl">Product</code> objects</li>
+        <li><code class="inl">count_by_category()</code> — Lab 3's <code class="inl">group_by_category</code>, now over the wire (Day 4's first agent tool)</li>
       </ul>
       <div class="endstate"><code>APIClient().list_products()</code> returns <b>list[Product]</b> — the Day-4 agent's toolbelt.</div>
     </section>
 
     <section class="slide">
       <p class="eyebrow">Looking ahead</p>
-      <h1 class="h">Where the <em>testing</em> comes in</h1>
-      <p class="lead">Day 3 / M8 wraps this client in a pytest suite — <strong>mocking</strong> <code class="inl">requests</code> so tests need no live server, and <strong>parametrizing</strong> across status codes.</p>
+      <h1 class="h">Five lines → a client you'd trust at 3am</h1>
+      <p class="lead">Every lie is dead. It <strong>reports</strong> failure (<code class="inl">APIError</code>), it <strong>can't</strong> hang (<code class="inl">timeout</code>), it <strong>survives</strong> a blip (the retry loop), and it hands back real <code class="inl">BankAccount</code> objects — not a dict that might be an error. On <strong>Day 4 these same methods become the agent's tools.</strong></p>
+      <p class="lead">Day 3 / M8 then wraps it in a pytest suite — <strong>mocking</strong> <code class="inl">requests</code> so tests need no live server, and <strong>parametrizing</strong> across status codes.</p>
       <p class="lead soft">That injected <code class="inl">session=</code> argument isn't decoration: it's the <strong>seam</strong> that makes it all mockable. M5 builds and validates; Day 3 tests it systematically.</p>
     </section>
 
@@ -391,7 +450,7 @@ if not resp.ok:
 
 <div class="nav">
   <button id="prev" aria-label="Previous slide">◀</button>
-  <span class="count" id="count">1 / 16</span>
+  <span class="count" id="count">1 / 20</span>
   <button id="next" aria-label="Next slide">▶</button>
 </div>
 <div class="hint">← → to navigate</div>
