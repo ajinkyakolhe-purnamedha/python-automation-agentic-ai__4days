@@ -5,10 +5,10 @@ Drives the FastAPI server from Python. Every method returns a Pydantic
 `_request` funnel owns the retry loop, so a network blip doesn't kill a
 bulk-import run. On Day 4, the agent's tools will literally *be* these methods.
 
-You write THREE bodies: `_request`, `list_products`, `create_product`.
-Everything else (`APIError`, `__init__`, `_extract_detail`, and the
-`health`/`get_product`/`delete_product` worked examples) is already filled —
-read them, they show the exact pattern you repeat.
+You write FOUR bodies: `_request`, `list_products`, `create_product`, and
+`count_by_category`. Everything else (`APIError`, `__init__`, `_extract_detail`,
+and the `health`/`get_product`/`delete_product` worked examples) is already
+filled — read them, they show the exact pattern you repeat.
 
 Done-signal: `APIClient().list_products()` returns `list[Product]`, and a
 duplicate POST raises `APIError` (README → Expected output).
@@ -32,7 +32,7 @@ DEFAULT_TIMEOUT = 5.0
 DEFAULT_BASE_URL = "http://localhost:8000"
 
 # Retry policy for _request. Only transient faults are retried — see the
-# exception tuple below; a 4xx is never in it (module-5, §1.2).
+# exception tuple below; a 4xx is never in it (module-5, §1.4).
 RETRY_TIMES = 3
 RETRY_DELAY = 0.2
 TRANSIENT_ERRORS = (requests.ConnectionError, requests.Timeout)
@@ -69,7 +69,7 @@ class APIClient:
     # ---- low-level: every call funnels through here ----
 
     def _request(self, method: str, path: str, **kwargs) -> requests.Response:
-        # TODO — the funnel (module-5, §2.1) with the retry loop in it (§2.2).
+        # TODO — the funnel (module-5, §3.1) with the retry loop in it (§3.2).
         # Every public method below goes through here, so everything you write
         # once here, they all get for free. Four jobs:
         #
@@ -89,7 +89,7 @@ class APIClient:
         #      response back.
         #
         # Think about WHERE job 4 goes relative to the loop. A 4xx must never be
-        # retried (§1.2) — the placement is what guarantees it, not a comment.
+        # retried (§1.4) — the placement is what guarantees it, not a comment.
         ...
 
     @staticmethod
@@ -127,6 +127,24 @@ class APIClient:
         #       and what you have is a Product — convert it (module-4, §3.2).
         #       The server echoes the created product back, so finish the same
         #       way get_product does: validate the response into a Product.
+        ...
+
+    # ---- a query over the wire (Day 4 calls this one as an agent tool) ----
+
+    def count_by_category(self) -> dict:
+        # TODO: how many products in each category?  ->  {"Electronics": 2, "Home": 1}
+        #
+        #       You have written this before. Lab 3's ProductCatalog.group_by_category()
+        #       walked a dict you owned, in memory. This walks the same catalog over
+        #       HTTP — and the counting code doesn't change at all. That's the point:
+        #       the data moved to another machine and the logic didn't notice.
+        #
+        #       Build on list_products() above — don't reach for _request yourself.
+        #       Every Product it returns is already validated, so .category is safe
+        #       to read. Then count: a dict + .get(key, 0) (M1), or collections.Counter.
+        #
+        #       On Day 4 the agent calls this to answer "how many electronics do we
+        #       have?" — your method IS the tool.
         ...
 
     # --- Stretch (optional): PATCH ---
