@@ -1,0 +1,20 @@
+id,name,category,price,in_stock
+100,Wireless Mouse,Electronics,1299,true
+101,USB-C Hub,Electronics,2499,true
+102,Laptop Stand,Office,1799,true
+103,Notebook A5,Stationery,149,true
+104,Desk Lamp,Home,999,true
+105,Steel Water Bottle,Fitness,599,true
+106,Yoga Block,Fitness,449,false
+107,Coffee Mug,Home,299,true
+108,Bluetooth Speaker,Electronics,2999,true
+109,Phone Case,Electronics,399,true
+110,Travel Backpack,Travel,2199,true
+111,Sticky Notes,Stationery,99,true
+112,Whiteboard Marker,Stationery,129,true
+113,HDMI Cable,Electronics,349,true
+114,Mechanical Pencil,Stationery,199,true
+115,Trail Running Shoes,Fitness,4599,true
+116,,Misc,500,true
+117,Broken Item,Misc,-50,true
+118,Bad Price Tag,Misc,not-a-number,true

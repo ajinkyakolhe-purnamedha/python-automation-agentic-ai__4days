@@ -284,7 +284,7 @@ Plus the Zen: clear names, explicit type hints, readable flow.
 
 # 🧪 Lab 1 — The `Product` Foundation
 
-**80 min** · open `labs/lab-01-product-foundation/README.md` · scaffolds in `starter/`
+**80 min** · open `modules/m01-python-core/lab/README.md` · scaffolds in `starter/`
 
 You'll build (now on `Product`, not `BankAccount`):
 - `catalog/models.py` — product dict factory + catalog list functions

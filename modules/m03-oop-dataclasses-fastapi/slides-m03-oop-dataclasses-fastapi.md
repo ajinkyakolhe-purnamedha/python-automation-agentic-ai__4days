@@ -331,7 +331,7 @@ Every one is the same idea you met building this app today.
 
 # 🧪 Lab 3 — Local API Server
 
-**80 min** · open `labs/lab-03-local-api-server/README.md` · scaffolds in `starter/`
+**80 min** · open `modules/m03-oop-dataclasses-fastapi/lab/README.md` · scaffolds in `starter/`
 
 You'll build (on `Product`, not `BankAccount`):
 - `catalog/models.py` — `Product` as a class → `@dataclass` (typed fields, `field(default_factory=list)`)

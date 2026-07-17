@@ -3,7 +3,7 @@
     pytest tests/test_lab03.py -v
 
 The server tests drive the app in-process with FastAPI's TestClient (no uvicorn,
-no curl). (Decorators are taught in their own module — not here.)
+no curl).
 """
 
 from __future__ import annotations

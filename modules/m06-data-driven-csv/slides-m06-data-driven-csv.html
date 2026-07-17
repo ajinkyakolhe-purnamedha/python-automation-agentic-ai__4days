@@ -1,5 +1,6 @@
 <meta charset="utf-8">
-<title>Module 1 · Python Core — Acuity Day 1</title>
+<meta charset="utf-8">
+<title>Module 6 · Data-Driven Automation — Acuity Day 2</title>
 <style>
   :root{
     --bg:#E7EAF1; --bg2:#EFF1F7; --slide:#FFFFFF; --ink:#131A24; --ink-soft:#586477;
@@ -136,8 +137,8 @@
            background:var(--grad);transform:rotate(45deg);box-shadow:0 3px 8px -3px var(--glow)}
   ul.clean li b{font-weight:700}
 
-  /* week map */
-  pre.map{margin:0;background:var(--code-bg);border:1px solid var(--code-line);border-radius:13px;padding:26px 30px;
+  /* week / architecture map */
+  pre.map{margin:0 0 22px;background:var(--code-bg);border:1px solid var(--code-line);border-radius:13px;padding:26px 30px;
           font-family:var(--mono);font-size:20px;line-height:1.85;color:var(--ink);overflow-x:auto;
           box-shadow:0 18px 40px -26px rgba(19,26,36,.4)}
   pre.map b{color:var(--accent);font-weight:700}
@@ -211,66 +212,23 @@
 <div id="viewport">
   <div class="stage">
 
-    <!-- 1 · TITLE -->
     <section class="slide title active">
       <span class="tglow"></span>
-      <p class="kicker">Acuity Training · 4 Days</p>
-      <h1><span class="grad">Day 1</span></h1>
-      <h2>Python Fundamentals — <b>build the Catalog Foundation</b></h2>
-      <p class="metaline"><b>6 hours</b> · 3 modules · 3 labs · one repo for the week</p>
+      <p class="kicker">Acuity · Day 2 · Module 6</p>
+      <h1>Data-Driven <span class="grad">Automation</span></h1>
+      <h2>Files in, API calls out, <b>a report to show for it</b> — the shape of every automation job you'll be handed.</h2>
+      <p class="metaline"><b>3 sections</b> · ~50 min · Lab 6</p>
     </section>
 
-    <!-- 2 · What we build today -->
     <section class="slide">
-      <p class="eyebrow">Day 1 · The goal</p>
-      <h1 class="h">What we build today</h1>
-      <p class="lead">By 6&nbsp;PM, a <strong>local FastAPI server</strong> running on your laptop, serving a <code class="inl">Product</code> catalog you wrote from scratch.</p>
-      <div class="steps">
-        <div class="step"><span class="k">Module 1</span><div>Python core → <b>Lab 1:</b> <code class="inl">Product</code> foundation</div></div>
-        <div class="step"><span class="k">Module 2</span><div>Data structures, files, modules → <b>Lab 2:</b> persistent catalog</div></div>
-        <div class="step"><span class="k">Module 3</span><div>OOP, decorators, FastAPI → <b>Lab 3:</b> local API server</div></div>
-      </div>
-      <div class="along"><span class="play">▶</span><div><b>Same repo carries through Day 2, 3, 4.</b> No throwaway demos.</div></div>
+      <p class="eyebrow">The capstone</p>
+      <h1 class="h">A file becomes API actions</h1>
+      <p class="lead">M2 gave us <strong>files</strong>, M4 gave us <strong>validation</strong>, M5 gave us the <strong>client</strong>. M6 wires all three into <em>one workflow</em>.</p>
+<pre class="map"> products.csv ─▶ validate each row ─▶ POST via APIClient ─▶ <b>import_report.json</b>
+   (source)         (M4 model)           (M5 client)          (the deliverable)</pre>
+      <p class="lead soft">This <em>is</em> what "automate API workflows" means on the job — and it's Day 3's system-under-test.</p>
     </section>
 
-    <!-- 3 · The week -->
-    <section class="slide">
-      <p class="eyebrow">The week in one picture</p>
-      <h1 class="h">Every day extends yesterday</h1>
-      <pre class="map">
-<b>Day 1</b>   Product class + FastAPI server
-<b>Day 2</b>   + Pydantic + APIClient + CSV bulk-import
-<b>Day 3</b>   + pytest suite + mocks + CI green
-<b>Day 4</b>   + LLM-powered CatalogAgent + agent tests</pre>
-      <p class="lead soft" style="margin-top:24px">Each day extends your <code class="inl">my-catalog/</code>. A catch-up baseline (<code class="inl">day-N-start/</code>) is provided every morning.</p>
-    </section>
-
-    <!-- 4 · MODULE 1 title -->
-    <section class="slide section">
-      <span class="ghost">01</span>
-      <div class="secrow">
-        <div class="secnum">01</div>
-        <div class="secdiv"></div>
-        <div class="secmeta">
-          <p class="eyebrow">Module · 6 sections · ~40 min</p>
-          <h1>Python Core</h1>
-          <div class="sub">Each section builds on the last; we code each one live.<br><b>1</b> Variables · <b>2</b> Control flow · <b>3</b> Functions · <b>4</b> Exceptions · <b>5</b> Zen of Python · <b>6</b> Revision</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 5 · Story: bank accounts -->
-    <section class="slide">
-      <p class="eyebrow">Our story for today</p>
-      <h1 class="h">Bank accounts</h1>
-      <p class="lead">Every example today is one <strong>account</strong>. In Python an account is just a <code class="inl">dict</code> — named fields, no class yet (classes come in Module 3).</p>
-      <pre class="code"><code class="py">acct = {"id": 1, "owner": "Ada", "account_type": "savings",
-        "balance": 1500.0, "is_active": True,
-        "tags": ["primary", "online"]}</code></pre>
-      <p class="lead soft" style="margin-top:22px">Same six fields all day. M2 stores many of these in files; M3 turns them into a class.</p>
-    </section>
-
-    <!-- 6 · Section 1 divider -->
     <section class="slide section">
       <span class="ghost">1</span>
       <div class="secrow">
@@ -278,77 +236,37 @@
         <div class="secdiv"></div>
         <div class="secmeta">
           <p class="eyebrow">Section</p>
-          <h1>Variables</h1>
-          <div class="sub">variables &amp; operations → types → hints → list / dict → the account</div>
+          <h1>The pattern</h1>
+          <div class="sub">what data-driven means → why it scales → source / process / report<br><b>Why now:</b> name the shape once, and every job after this is the same shape.</div>
         </div>
       </div>
     </section>
 
-    <!-- 7 · 1.1 -->
     <section class="slide">
-      <p class="eyebrow">1.1 · Variables &amp; operations</p>
-      <h1 class="h">A name pointing at a value</h1>
-      <p class="lead">You don't declare a type — Python infers it. Then you <strong>operate</strong> on those values.</p>
-      <pre class="code"><code class="py">owner = "Ada"; balance = 1500.0; rate = 0.04
-balance = balance + balance * rate    # arithmetic on numbers
-label = "owner: " + owner             # + joins strings
-wealthy = balance > 5000              # comparison → a bool</code></pre>
+      <p class="eyebrow">1.1 · What "data-driven" means</p>
+      <h1 class="h">The logic is fixed; the data lives outside</h1>
+      <p class="lead">You don't edit code to add a record — <strong>you add a row</strong>. The workflow never changes.</p>
+<pre class="map"> code (fixed):   for each record → validate → send → record the result
+ data (varies):  products.csv → 10 rows today, 10,000 tomorrow — same code</pre>
     </section>
 
-    <!-- 8 · 1.2 -->
     <section class="slide">
-      <p class="eyebrow">1.2 · Types — one per kind</p>
-      <h1 class="h">type(x) reveals the kind</h1>
-      <p class="lead">The account's fields cover Python's core types.</p>
-      <pre class="code"><code class="py">print(type("Ada"))     # &lt;class 'str'&gt;
-print(type(1))         # &lt;class 'int'&gt;
-print(type(1500.0))    # &lt;class 'float'&gt;
-print(type(True))      # &lt;class 'bool'&gt;
-print(type(None))      # &lt;class 'NoneType'&gt;</code></pre>
+      <p class="eyebrow">1.2 · Why it's the automation workhorse</p>
+      <h1 class="h">Scale · separation · one place to maintain</h1>
+      <p class="lead"><strong>Scale</strong> — one row or ten thousand, the code is identical.<br><strong>Separation</strong> — ops hands you a CSV; no developer needed to "add the data".<br><strong>One place to maintain</strong> — the workflow is written once.</p>
+      <p class="lead soft">QA engineers know this by another name: <strong>data-driven testing</strong> — one test, many input rows. Day 3 does exactly that with <code class="inl">@parametrize</code>.</p>
     </section>
 
-    <!-- 9 · 1.3 -->
     <section class="slide">
-      <p class="eyebrow">1.3 · Type hints — just a hint</p>
-      <h1 class="h">A hint, not a rule</h1>
-      <p class="lead">A variable can hold <strong>any</strong> type, and you can rebind it at runtime. A <strong>type hint</strong> (<code class="inl">name: type</code>) documents intent — it is <strong>not enforced</strong>.</p>
-      <pre class="code"><code class="py">balance = 1500.0      # float now...
-balance = "frozen"    # ...str later — Python allows it
-
-balance: float = 1500.0   # a hint; it still won't stop balance = "frozen"</code></pre>
+      <p class="eyebrow">1.3 · The shape</p>
+      <h1 class="h">source → process → report</h1>
+      <p class="lead">Every data-driven job is the same three parts:</p>
+<pre class="map"> SOURCE          PROCESS (per record)        SINK
+ a CSV / JSON  ─▶  validate → act (API)   ─▶  a report of what happened</pre>
+      <p class="lead soft">The <strong>report is the deliverable</strong> — the input file is just the input. Miss that and you've written a script that "worked" and told nobody what it did.</p>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 1</b> — the shape, in code: one loop over records</div></div>
     </section>
 
-    <!-- 10 · 1.4 -->
-    <section class="slide">
-      <p class="eyebrow">1.4 · Advanced variables</p>
-      <h1 class="h">list &amp; dict</h1>
-      <p class="lead">When one value isn't enough: a <strong>list</strong> holds many in order; a <strong>dict</strong> holds named fields you look up by key.</p>
-      <pre class="code"><code class="py">tags: list[str] = ["primary", "online"]            # ordered, indexable
-acct: dict = {"owner": "Ada", "balance": 1500.0}   # look up by key</code></pre>
-    </section>
-
-    <!-- 11 · 1.5 -->
-    <section class="slide">
-      <p class="eyebrow">1.5 · Using list &amp; dict</p>
-      <h1 class="h">Read by index, read by key</h1>
-      <p class="lead">Each carries handy methods.</p>
-      <pre class="code"><code class="py">tags[0]; len(tags)            # "primary" ; 2
-acct["owner"]; acct.get("x")  # "Ada" ; None (safe — no KeyError)
-acct.keys(); acct.values()    # the field names ; the values
-acct.items()                  # (key, value) pairs — great for loops</code></pre>
-    </section>
-
-    <!-- 12 · 1.6 -->
-    <section class="slide">
-      <p class="eyebrow">1.6 · Every type, in one dict</p>
-      <h1 class="h">An account = our domain object</h1>
-      <p class="lead">One bank account is just a <code class="inl">dict</code> whose fields span all the types we met. <strong>This carries the whole course.</strong></p>
-      <pre class="code"><code class="py">acct = {"id": 1, "owner": "Ada", "account_type": "savings",
-        "balance": 1500.0, "is_active": True, "tags": ["primary", "online"]}</code></pre>
-      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 1</b> — variables &amp; ops → types → hints → list/dict → the account</div></div>
-    </section>
-
-    <!-- 13 · Section 2 -->
     <section class="slide section">
       <span class="ghost">2</span>
       <div class="secrow">
@@ -356,45 +274,40 @@ acct.items()                  # (key, value) pairs — great for loops</code></p
         <div class="secdiv"></div>
         <div class="secmeta">
           <p class="eyebrow">Section</p>
-          <h1>Control flow</h1>
-          <div class="sub">truthiness · if / elif / else · for · while</div>
+          <h1>Validating the source</h1>
+          <div class="sub">CSV is all strings → coerce + check in one step → same model, any source<br><b>Why now:</b> the file is the untrusted input — the model is the gate it has to pass.</div>
         </div>
       </div>
     </section>
 
-    <!-- 14 · 2.1 -->
     <section class="slide">
-      <p class="eyebrow">2.1 · Truthiness</p>
-      <h1 class="h">Empty things are False</h1>
-      <p class="lead">Test a value straight in <code class="inl">if</code>. "Empty" / "zero" values are <strong>falsy</strong>: <code class="inl">0</code>, <code class="inl">0.0</code>, <code class="inl">""</code>, <code class="inl">[]</code>, <code class="inl">{}</code>, <code class="inl">None</code>, <code class="inl">False</code>. Everything else is truthy.</p>
-      <pre class="code"><code class="py">if not acct["tags"]:        # empty list is falsy
-    print("no tags yet")</code></pre>
+      <p class="eyebrow">2.1 · Read the CSV</p>
+      <h1 class="h">Every cell is a string</h1>
+      <p class="lead"><code class="inl">csv.DictReader</code> gives one dict per row, keyed by the header — but every value is <strong>text</strong>, even numbers and booleans.</p>
+<pre class="code"><code class="py">for row in csv.DictReader(open("products.csv")):
+    row    # {'id': '1', 'price': '499.0', 'in_stock': 'true'} — all str</code></pre>
     </section>
 
-    <!-- 15 · 2.2 -->
     <section class="slide">
-      <p class="eyebrow">2.2 · Branching</p>
-      <h1 class="h">if / elif / else picks one branch</h1>
-      <p class="lead"><strong>Indentation</strong> — not braces — marks the block.</p>
-      <pre class="code"><code class="py">if not a["is_active"]:   label = "inactive"
-elif a["balance"] < 100: label = "low balance"
-else:                    label = "healthy"</code></pre>
+      <p class="eyebrow">2.2 · Validate = coerce + check</p>
+      <h1 class="h">One step, not two</h1>
+      <p class="lead">Hand the string-dict straight to your Pydantic model. It <strong>coerces</strong> <code class="inl">"499.0"</code>→float, <code class="inl">"true"</code>→bool, <strong>and</strong> enforces the constraints. Don't pre-clean the row — that's the model's job.</p>
+<pre class="code"><code class="py">Product.model_validate({"id":"1","name":"Cable","category":"Elec","price":"499.0"})  # typed ✓
+Product.model_validate({"id":"1","name":"Cable","category":"Elec","price":"-5"})     # ValidationError</code></pre>
     </section>
 
-    <!-- 16 · 2.3 -->
     <section class="slide">
-      <p class="eyebrow">2.3 · Loops</p>
-      <h1 class="h">for (and while)</h1>
-      <p class="lead"><code class="inl">for</code> walks any sequence; <code class="inl">while</code> repeats until a condition flips.</p>
-      <pre class="code"><code class="py">for a in accounts: ...                # over a list
-for key, value in acct.items(): ...   # over a dict's pairs
-for i, a in enumerate(accounts): ...  # i is the counter: 0, 1, 2…
-for n in range(3): ...                # 0, 1, 2
-while sam["balance"] < 100: ...       # repeat until it clears 100</code></pre>
-      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 2</b> — branch accounts by status, top up a balance with <code>while</code></div></div>
+      <p class="eyebrow">2.3 · Same model, whatever the source</p>
+      <h1 class="h">The source is an implementation detail</h1>
+      <p class="lead">Swap the CSV for JSON and <strong>nothing changes</strong> — <code class="inl">model_validate</code> is still the one gate. Only the <em>reason</em> a record fails shifts:</p>
+      <table class="moves">
+        <tr><td class="tool">CSV</td><td>text, always — so <b>"abc"</b> as a price must be caught by coercion</td></tr>
+        <tr><td class="tool">JSON</td><td>real types (<code>499.0</code> <em>is</em> a float) — but no promise of <b>shape or limits</b></td></tr>
+      </table>
+<pre class="code"><code class="py">{"id": 1, "name": "", "price": -5}    # valid JSON. invalid product.</code></pre>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 2</b> — DictReader → model_validate each row; then the same model on JSON</div></div>
     </section>
 
-    <!-- 17 · Section 3 -->
     <section class="slide section">
       <span class="ghost">3</span>
       <div class="secrow">
@@ -402,161 +315,54 @@ while sam["balance"] < 100: ...       # repeat until it clears 100</code></pre>
         <div class="secdiv"></div>
         <div class="secmeta">
           <p class="eyebrow">Section</p>
-          <h1>Functions</h1>
-          <div class="sub">arguments &amp; defaults · return · type hints · *args / **kwargs</div>
+          <h1>Drive the API + report</h1>
+          <div class="sub">two kinds of failure → the bucket loop → the report is the product<br><b>Why now:</b> one bad row must not kill the batch — and the operator needs to know which row.</div>
         </div>
       </div>
     </section>
 
-    <!-- 18 · 3.1 -->
     <section class="slide">
-      <p class="eyebrow">3.1 · Functions</p>
-      <h1 class="h">Arguments, defaults, return</h1>
-      <p class="lead"><code class="inl">def</code> names reusable logic. <strong>Arguments</strong> feed it; parameters can carry <strong>default values</strong>; <code class="inl">return</code> hands a result back.</p>
-      <pre class="code"><code class="py">def total_balance(accounts, only_active=True):   # only_active defaults to True
-    return sum(a["balance"] for a in accounts if a["is_active"])</code></pre>
-    </section>
-
-    <!-- 19 · 3.2 -->
-    <section class="slide">
-      <p class="eyebrow">3.2 · Type hints on functions</p>
-      <h1 class="h">Annotate the signature</h1>
-      <p class="lead">Hints <strong>document</strong> the signature — Python does <strong>not</strong> enforce them; a wrong type still runs.</p>
-      <pre class="code"><code class="py">def total_balance(accounts: list[dict], only_active: bool = True) -> float:
-    ...
-total_balance("oops")   # a type checker complains; Python runs it anyway</code></pre>
-    </section>
-
-    <!-- 20 · 3.3 -->
-    <section class="slide">
-      <p class="eyebrow">3.3 · Flexible args</p>
-      <h1 class="h">*args / **kwargs</h1>
-      <p class="lead"><code class="inl">*args</code> collects extra <strong>positional</strong> args into a tuple; <code class="inl">**kwargs</code> collects extra <strong>keyword</strong> args into a dict.</p>
-      <pre class="code"><code class="py">def open_account(**fields):      # fields is a dict
-    return {"is_active": True, **fields}
-open_account(id=2, owner="Lin", balance=800.0)</code></pre>
-      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 3</b> — <code>total_balance()</code> with hints, then a <code>**kwargs</code> factory</div></div>
-    </section>
-
-    <!-- 21 · Section 4 -->
-    <section class="slide section">
-      <span class="ghost">4</span>
-      <div class="secrow">
-        <div class="secnum">4</div>
-        <div class="secdiv"></div>
-        <div class="secmeta">
-          <p class="eyebrow">Section</p>
-          <h1>Exceptions</h1>
-          <div class="sub">raise · try / except / else / finally</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 22 · 4.1 -->
-    <section class="slide">
-      <p class="eyebrow">4.1 · raise</p>
-      <h1 class="h">Business logic as a readable error</h1>
-      <p class="lead"><code class="inl">raise</code> an error instead of returning a bad value (or a silent <code class="inl">None</code>). The type + message say exactly which rule broke.</p>
-      <pre class="code"><code class="py">def find_account(accounts, acct_id):
-    for a in accounts:
-        if a["id"] == acct_id: return a
-    raise LookupError(f"no account with id={acct_id}")</code></pre>
-    </section>
-
-    <!-- 23 · 4.2 -->
-    <section class="slide">
-      <p class="eyebrow">4.2 · try / except / else / finally</p>
-      <h1 class="h">Handle the failure, recover</h1>
-      <p class="lead"><code class="inl">try</code> the risky code, <code class="inl">except</code> the failure, <code class="inl">else</code> on success, <code class="inl">finally</code> always (cleanup).</p>
-      <pre class="code"><code class="py">try:    acct = find_account(accounts, 99)
-except LookupError as err: print("not found:", err)
-else:   print("found:", acct["owner"])
-finally:print("lookup done")</code></pre>
-      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 4</b> — raise on overdraft &amp; missing id, handle both</div></div>
-    </section>
-
-    <!-- 24 · Section 5 -->
-    <section class="slide section">
-      <span class="ghost">5</span>
-      <div class="secrow">
-        <div class="secnum">5</div>
-        <div class="secdiv"></div>
-        <div class="secmeta">
-          <p class="eyebrow">Section</p>
-          <h1>The Zen of Python</h1>
-          <div class="sub">clean code: easy to read, easy to maintain</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 25 · 5.1 -->
-    <section class="slide">
-      <p class="eyebrow">5.1 · Zen of Python</p>
-      <h1 class="h">Write for the reader</h1>
-      <p class="lead"><code class="inl">import this</code> prints Python's creed. Code is read far more often than it's written.</p>
-      <pre class="code"><code class="py"># "If you write code as cleverly as possible, you are
-#  not clever enough to debug it."</code></pre>
-      <p class="lead" style="margin-top:22px">Favour <strong>clear over clever</strong>: explicit &gt; implicit, simple &gt; complex, flat &gt; nested.</p>
-    </section>
-
-    <!-- 26 · 5.2 -->
-    <section class="slide">
-      <p class="eyebrow">5.2 · Clean code in practice</p>
-      <h1 class="h">Say what you mean</h1>
-      <p class="lead">The reader (often future-you) should grasp each line at a glance.</p>
-      <pre class="code"><code class="py">if len(tags) == 0: ...   # clever / noisy   →   if not tags: ...   # clear</code></pre>
-      <p class="lead" style="margin-top:22px"><strong>Flat &gt; nested:</strong> return early (a guard clause) instead of wrapping the body in <code class="inl">if</code>.</p>
-    </section>
-
-    <!-- 27 · 5.3 -->
-    <section class="slide">
-      <p class="eyebrow">5.3 · Names &amp; explicit types</p>
-      <h1 class="h">The cheapest readability wins</h1>
-      <p class="lead"><strong>Honest names</strong> and <strong>explicit type hints</strong>. A good name removes the need for a comment.</p>
-      <pre class="code"><code class="py">def calc(x): ...                              # what is x? what comes back?
-def total_active_balance(accounts: list[dict]) -> float: ...   # name + hints tell the story</code></pre>
-      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 5</b> — rename for clarity, add explicit hints, flatten the flow</div></div>
-    </section>
-
-    <!-- 28 · Section 6 -->
-    <section class="slide section">
-      <span class="ghost">6</span>
-      <div class="secrow">
-        <div class="secnum">6</div>
-        <div class="secdiv"></div>
-        <div class="secmeta">
-          <p class="eyebrow">Section</p>
-          <h1>Revision</h1>
-          <div class="sub">the four moves, together</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 29 · 6.1 -->
-    <section class="slide">
-      <p class="eyebrow">6.1 · The four moves, one picture</p>
-      <h1 class="h">Everything, at a glance</h1>
+      <p class="eyebrow">3.1 · Two kinds of failure</p>
+      <h1 class="h">Keep them apart</h1>
+      <p class="lead">They need <em>different fixes</em>, so collapsing them into one "errors" list lies to the operator.</p>
       <table class="moves">
-        <tr><td>store one thing with named fields</td><td class="tool">dict</td></tr>
-        <tr><td>choose / repeat</td><td class="tool">if / elif / else · for · while</td></tr>
-        <tr><td>reuse logic, hand back a result</td><td class="tool">def … return</td></tr>
-        <tr><td>fail clearly, recover</td><td class="tool">raise · try / except</td></tr>
+        <tr><td class="tool">bad data</td><td>never reaches the API (<code>ValidationError</code>) — <b>fix the row</b></td></tr>
+        <tr><td class="tool">server says no</td><td>well-formed, rejected (409 duplicate) — <b>fix the conflict</b></td></tr>
       </table>
-      <p class="lead soft" style="margin-top:22px">Plus the Zen: clear names, explicit type hints, readable flow.</p>
-      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 6</b> — one little bank exercising all four moves</div></div>
+      <p class="lead soft">Same reason M5 raised <code class="inl">APIError</code> rather than letting a status code leak: name the failure and the caller can act on it.</p>
     </section>
 
-    <!-- 30 · LAB -->
+    <section class="slide">
+      <p class="eyebrow">3.2 · The loop</p>
+      <h1 class="h">Validate, send, bucket</h1>
+      <p class="lead"><code class="inl">try</code> each step; on failure, drop the row into the right bucket and <code class="inl">continue</code>. <strong>One bad row never stops the batch.</strong></p>
+<pre class="code"><code class="py">for n, row in enumerate(rows):
+    try:    product = Product.model_validate(row)
+    except ValidationError as e: bad_data.append({"row": n, "errors": e.errors()}); continue
+    try:    client.create_product(product); created.append(product.id)
+    except APIError as e:        rejected.append({"row": n, "status": e.status_code})</code></pre>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">3.3 · The report is the product</p>
+      <h1 class="h">This is what you hand back</h1>
+      <p class="lead">The CSV was the input; <strong>this</strong> is the deliverable — and it's the exact shape Day 3 writes tests against.</p>
+<pre class="code"><code class="py">report = {"created": created, "validation_errors": bad_data, "api_errors": rejected}
+json.dump(report, open("import_report.json", "w"), indent=2)</code></pre>
+      <p class="lead soft">Every <code class="inl">e.errors()</code> from M4 §2.2 lands in there, field by field. <strong>That's Pydantic earning its keep</strong> — the operator sees exactly which row and which field.</p>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 3</b> — the bulk-import loop + write import_report.json</div></div>
+    </section>
+
     <section class="slide lab">
-      <span class="labtag">🧪 LAB 1 · 80 MIN</span>
-      <h1>The <code class="inl" style="font-size:.85em">Product</code> Foundation</h1>
-      <p class="lead">Open <code class="inl">modules/m01-python-core/lab/README.md</code> · scaffolds in <code class="inl">starter/</code></p>
-      <p class="lead" style="margin-bottom:14px">You'll build — now on <code class="inl">Product</code>, not <code class="inl">BankAccount</code>:</p>
+      <span class="labtag">🧪 LAB 6 · 60 MIN</span>
+      <h1>Bulk-Import Workflow</h1>
+      <p class="lead">Open <code class="inl">modules/m06-data-driven-csv/lab/README.md</code> · scaffolds in <code class="inl">starter/</code></p>
       <ul class="clean">
-        <li><code class="inl">catalog/models.py</code> — product dict factory + catalog list functions</li>
-        <li><code class="inl">catalog/cli.py</code> — <code class="inl">list</code>, <code class="inl">add</code> subcommands</li>
+        <li><code class="inl">data/products.csv</code> — 19 rows, 3 of them deliberately bad</li>
+        <li><code class="inl">catalog/import_csv.py</code> — read → validate → POST → <code class="inl">import_report.json</code></li>
+        <li>the report: <code class="inl">created</code> · <code class="inl">validation_errors</code> · <code class="inl">api_errors</code>, kept apart</li>
       </ul>
-      <div class="endstate">End state: <code>python -m catalog.cli list</code> prints <b>5 seeded products</b>.</div>
+      <div class="endstate">End of Day 2 → <b>19 rows | created 16 · validation errors 3</b>. Tomorrow you test it.</div>
     </section>
 
     <!-- chrome injected per-slide by JS: progress + footer -->
@@ -565,7 +371,7 @@ def total_active_balance(accounts: list[dict]) -> float: ...   # name + hints te
 
 <div class="nav">
   <button id="prev" aria-label="Previous slide">◀</button>
-  <span class="count" id="count">1 / 30</span>
+  <span class="count" id="count">1 / 15</span>
   <button id="next" aria-label="Next slide">▶</button>
 </div>
 <div class="hint">← → to navigate</div>
@@ -582,7 +388,7 @@ def total_active_balance(accounts: list[dict]) -> float: ...   # name + hints te
   slides.forEach((s, k)=>{
     const p = document.createElement('div'); p.className='prog';
     const f = document.createElement('div'); f.className='foot';
-    f.innerHTML = '<span class="brand"><span class="dot"></span>Acuity · Day 1 · Module 1 — Python Core</span>'
+    f.innerHTML = '<span class="brand"><span class="dot"></span>Acuity · Day 2 · Module 6 — Data-Driven Automation</span>'
                 + '<span>'+String(k+1).padStart(2,'0')+' / '+String(N).padStart(2,'0')+'</span>';
     s.appendChild(p); s.appendChild(f);
     p.style.width = ((k+1)/N*100)+'%';

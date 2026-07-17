@@ -348,7 +348,7 @@ load_json("catalog.json")             # round-trips identically
 
 # 🧪 Lab 2 — Persistent Catalog
 
-**80 min** · open `labs/lab-02-persistent-catalog/README.md` · scaffolds in `starter/`
+**80 min** · open `modules/m02-data-files/lab/README.md` · scaffolds in `starter/`
 
 You'll build (on `Product`, not `BankAccount`):
 - `catalog/storage.py` — save/load the catalog as JSON and CSV
