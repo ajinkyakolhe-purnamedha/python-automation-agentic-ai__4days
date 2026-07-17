@@ -29,8 +29,8 @@ Same project, typed end to end.
 
 # Module 4
 ## JSON & Pydantic
-**4 sections · ~40 min** — each builds on the last; we code each one live
-1 dataclass → Pydantic · 2 Validation rules · 3 validate / dump · 4 Pydantic in FastAPI
+**5 sections · ~55 min** — each builds on the last; we code each one live
+1 dataclass → Pydantic · 2 Validation rules · 3 validate / dump · 4 Pydantic in FastAPI · 5 The model is data
 ---
 <!-- _class: section -->
 
@@ -116,6 +116,8 @@ An HTTP body or a file row arrives as a plain `dict`. `model_validate` turns it 
 ```python
 BankAccount.model_validate({"id": 2, "owner": "Lin", "balance": 800.0})   # dict → model
 ```
+
+> Got a JSON **string** rather than a dict? `model_validate_json(raw)` — same gate, one step earlier, no `json.loads` first. Remember it: on **Day 4 the LLM answers with text**, and that's the line that turns text into a checked object.
 ---
 # 3.2 · `model_dump` — a model becomes a dict
 
@@ -170,6 +172,57 @@ def get_account(id: int):
 The model **is** the schema. FastAPI's `/docs` now shows every field, type, and constraint — and lets you try the API in the browser. No extra work.
 
 <div class="code-along">▶ Code-along now → notebook Section 4 — a Pydantic-typed route; a bad body returns 422</div>
+---
+<!-- _class: section -->
+
+# Section 5 · The model is data
+## model_json_schema → description=  → optional fields
+**Why now:** §4 showed the schema *rendered* as docs. Now take it as **data** — that's the handle Day 4 hands to an LLM.
+---
+# 5.1 · `model_json_schema()` — the schema, as a dict
+
+§4.3 claimed *the model **is** the schema*. Here it is — not a docs page, a **plain Python dict**. Look closely: the `Field` rules you wrote in §2.1 became **JSON Schema keywords**, for free.
+
+```python
+Product.model_json_schema()
+# {'type': 'object', 'title': 'Product',
+#  'properties': {'id':    {'type': 'integer', 'minimum': 1},      # ← Field(ge=1)
+#                 'name':  {'type': 'string', 'minLength': 1},     # ← Field(min_length=1)
+#                 'price': {'type': 'number', 'minimum': 0}, ...}, # ← Field(ge=0)
+#  'required': ['id', 'name', 'category', 'price']}
+```
+
+`/docs` is **rendered from this**. And on **Day 4 you hand this exact dict to an LLM** so it knows how to call your function. One model, three consumers.
+---
+# 5.2 · `description=` — documentation that *is* prompt text
+
+Same `Field()` from §2.1, doing a different job. The description rides into the schema (§5.1) — and on Day 4 **the LLM reads it** to decide what to pass.
+
+```python
+class CatalogQuery(BaseModel):
+    max_price: float | None = Field(
+        default=None, ge=0,
+        description="Upper price bound in INR, or null for no bound.",
+    )
+# → schema: {'description': 'Upper price bound in INR, or null for no bound.',
+#            'anyOf': [{'type': 'number', 'minimum': 0}, {'type': 'null'}]}
+```
+
+**This is the punchline of Day 2 → Day 4:** a docstring the machine obeys. Write it badly and the LLM calls your tool badly.
+---
+# 5.3 · Optional fields — `| None`
+
+`in_stock: bool = True` was a **default**. This is different: the field may legitimately be **nothing at all**. `str | None` and `Optional[str]` are the same thing — `| None` is the modern spelling.
+
+```python
+CatalogQuery.model_validate({})                        # all None — fine
+CatalogQuery.model_validate({"max_price": 2000})       # → 2000.0
+CatalogQuery.model_validate({"max_price": -5})         # ValidationError — ge=0 still applies
+```
+
+Optional means *"may be absent"*, **not** *"unchecked"*. Day 4's `CatalogQuery` is entirely optional fields — ask for "cheap electronics" and you named no product, so `name_contains` is `None`.
+
+<div class="code-along">▶ Code-along now → notebook Section 5 — dump the schema; add a description; validate an all-optional model</div>
 ---
 <!-- _class: lab -->
 

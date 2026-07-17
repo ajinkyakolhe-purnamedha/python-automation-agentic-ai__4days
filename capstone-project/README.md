@@ -30,7 +30,11 @@ Per lab: copy the lab's `starter/` files into `catalog/`, fill the `# TODO`s, ru
 ## Fell behind?
 ```bash
 cd my-catalog
-rm -rf catalog data .github          # keep tests/ — your lab graders live there
-cp -r ../checkpoints/day-N-start/. .
-uv sync                              # (Day 3+ baselines; Day-2 baseline is stdlib-only)
+rm -rf catalog data              # keep tests/ — your lab graders live there
+cp -r ../checkpoints/day-2-start/. .
+uv sync                          # every baseline is Lab-3+ , so FastAPI is needed
+uv run pytest tests/test_lab03.py -q     # 15 passed — you're caught up
 ```
+`day-2-start/` = the finished **Lab 3**: `@dataclass Product` + `ProductCatalog` + the FastAPI server. Drop it in and you rejoin at the start of Day 2 with a green Lab 3; Labs 1–2 retire (they skip), Labs 4–6 wait.
+
+> Later baselines (`day-3-start/`, `day-4-start/`) land as those days are authored.

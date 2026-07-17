@@ -235,7 +235,7 @@
       <p class="kicker">Acuity · Day 2 · Module 4</p>
       <h1>JSON &amp; <span class="grad">Pydantic</span></h1>
       <h2>A dataclass trusts you. Today the data has to <b>prove itself at the boundary</b> — and your API gets 422s and docs for free.</h2>
-      <p class="metaline"><b>4 sections</b> · ~40 min · Lab 4</p>
+      <p class="metaline"><b>5 sections</b> · ~55 min · Lab 4</p>
     </section>
 
     <section class="slide section">
@@ -336,6 +336,7 @@ except ValidationError as e:
       <h1 class="h">A dict becomes a model</h1>
       <p class="lead">An HTTP body or a file row arrives as a plain <code class="inl">dict</code>. <code class="inl">model_validate</code> turns it into a validated object — or raises.</p>
 <pre class="code"><code class="py">BankAccount.model_validate({"id": 2, "owner": "Lin", "balance": 800.0})   # dict → model</code></pre>
+      <div class="along"><span class="play">→</span><div>Got a JSON <b>string</b> rather than a dict? <code>model_validate_json(raw)</code> — same gate, one step earlier, no <code>json.loads</code> first. On <b>Day 4 the LLM answers with text</b>: that's the line that turns text into a checked object.</div></div>
     </section>
 
     <section class="slide">
@@ -395,6 +396,57 @@ def get_account(id: int):
       <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 4</b> — a Pydantic-typed route; a bad body returns 422</div></div>
     </section>
 
+    <section class="slide section">
+      <span class="ghost">5</span>
+      <div class="secrow">
+        <div class="secnum">5</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>The model is data</h1>
+          <div class="sub">model_json_schema → description= → optional fields<br><b>Why now:</b> §4 showed the schema <em>rendered</em> as docs. Now take it as <b>data</b> — that's the handle Day 4 gives an LLM.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">5.1 · model_json_schema()</p>
+      <h1 class="h">The schema, as a plain dict</h1>
+      <p class="lead">§4.3 claimed <em>the model <strong>is</strong> the schema</em>. Here it is — not a docs page, a dict. Look closely: the <code class="inl">Field</code> rules from §2.1 became <strong>JSON Schema keywords</strong>, for free.</p>
+<pre class="code"><code class="py">Product.model_json_schema()
+# {'type': 'object', 'title': 'Product',
+#  'properties': {'id':    {'type': 'integer', 'minimum': 1},      # <- Field(ge=1)
+#                 'name':  {'type': 'string', 'minLength': 1},     # <- Field(min_length=1)
+#                 'price': {'type': 'number', 'minimum': 0}, ...}, # <- Field(ge=0)
+#  'required': ['id', 'name', 'category', 'price']}</code></pre>
+      <p class="lead soft"><code class="inl">/docs</code> is <strong>rendered from this</strong>. And on <strong>Day 4 you hand this exact dict to an LLM</strong> so it knows how to call your function. One model, three consumers.</p>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">5.2 · description=</p>
+      <h1 class="h">Documentation that <em>is</em> prompt text</h1>
+      <p class="lead">The same <code class="inl">Field()</code> from §2.1, doing a different job. The description rides into the schema (§5.1) — and on Day 4 <strong>the LLM reads it</strong> to decide what to pass.</p>
+<pre class="code"><code class="py">class CatalogQuery(BaseModel):
+    max_price: float | None = Field(
+        default=None, ge=0,
+        description="Upper price bound in INR, or null for no bound.",
+    )
+# -> schema: {'description': 'Upper price bound in INR, or null for no bound.',
+#             'anyOf': [{'type': 'number', 'minimum': 0}, {'type': 'null'}]}</code></pre>
+      <p class="lead soft"><strong>The punchline of Day 2 → Day 4:</strong> a docstring the machine obeys. Write it badly and the LLM calls your tool badly.</p>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">5.3 · Optional fields</p>
+      <h1 class="h">`| None` — may be absent, still checked</h1>
+      <p class="lead"><code class="inl">in_stock: bool = True</code> was a <strong>default</strong>. This is different: the field may legitimately be <strong>nothing at all</strong>. <code class="inl">str | None</code> and <code class="inl">Optional[str]</code> are the same thing — <code class="inl">| None</code> is the modern spelling.</p>
+<pre class="code"><code class="py">CatalogQuery.model_validate({})                    # all None — fine
+CatalogQuery.model_validate({"max_price": 2000})   # -> 2000.0
+CatalogQuery.model_validate({"max_price": -5})     # ValidationError — ge=0 still applies</code></pre>
+      <p class="lead soft">Optional means <em>"may be absent"</em>, <strong>not</strong> <em>"unchecked"</em>. Day 4's <code class="inl">CatalogQuery</code> is entirely optional fields — ask for "cheap electronics" and you named no product, so <code class="inl">name_contains</code> is <code class="inl">None</code>.</p>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 5</b> — dump the schema; add a description; validate an all-optional model</div></div>
+    </section>
+
     <section class="slide lab">
       <span class="labtag">🧪 LAB 4 · 60 MIN</span>
       <h1>Pydantic Models for the Catalog</h1>
@@ -413,7 +465,7 @@ def get_account(id: int):
 
 <div class="nav">
   <button id="prev" aria-label="Previous slide">◀</button>
-  <span class="count" id="count">1 / 19</span>
+  <span class="count" id="count">1 / 23</span>
   <button id="next" aria-label="Next slide">▶</button>
 </div>
 <div class="hint">← → to navigate</div>

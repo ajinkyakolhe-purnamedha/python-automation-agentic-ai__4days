@@ -10,7 +10,7 @@ footer: "Acuity Training · Day 2 of 4"
 
 # Module 5
 ## REST API Client — automate & validate
-**2 sections · ~25 min** — each builds on the last; we code each one live
+**2 sections · ~40 min** — each builds on the last; we code each one live
 1 HTTP with requests · 2 The APIClient
 ---
 # Drive the server from Python
