@@ -79,6 +79,16 @@ Why this shape:
 - A second function (`get_product(product_id)`) MAY be added if an extra parametrize /
   second-layer-mock example is wanted; not required for the core lesson.
 
+**Placement (important — avoids a Day-4 collision).** The solution's existing
+`catalog/client.py` already holds the M05 `APIClient`, and Day-4's `agent.py` + Day-2's
+`import_csv.py` import it — so it **must not be overwritten**. Therefore:
+- **Solution:** `get_products` is **added alongside** the existing `APIClient` in
+  `catalog/client.py` (both coexist; APIClient stays for Day 2/4).
+- **Day-3 module starter (`m08.../lab/starter/`) and a student on the M01–M04 track:**
+  `client.py` contains **only** `get_products` — that student never built the `APIClient`.
+- Grader `test_lab08.py` imports `from catalog.client import get_products` via
+  `pytest.importorskip`, so it passes in both the student copy and the solution.
+
 ---
 
 ## 5. Module designs — full section articulation
@@ -270,11 +280,12 @@ Capstone graders `capstone-project/*/tests/test_lab07.py` / `test_lab08.py` /
 - **Source-of-truth chain** (`outline_v4.2-24hrs.md` → slides → lab README → starter/solution)
   must be updated together for Day 3. The outline's M08 description ("APIClient mocking /
   retry") changes to "mocking a network call"; `@parametrize` is listed under M07.
-- **`capstone-project/solution/`** — `tests/test_client.py` (currently the mocked-`APIClient`
-  suite) is rewritten against `catalog/client.get_products()`; a small `catalog/client.py`
-  (the tiny version in §4) replaces the M05 client as the Day-3 reference. The M05 client and
-  `decorators.py`/`@retry` remain only if still needed by the parked Day-4 plan; they are no
-  longer part of the Day-3 chain.
+- **`capstone-project/solution/`** — `get_products` is **added alongside** the existing
+  `APIClient` in `catalog/client.py` (the `APIClient` stays — Day-2 `import_csv.py` and Day-4
+  `agent.py` import it; overwriting it would break Day 4). Solution `tests/` **gains**
+  `test_server.py` (TestClient) and `get_products` tests; the existing `APIClient`/agent tests
+  are left intact. The M05 client is simply no longer part of the *Day-3* chain — it is not
+  removed.
 - **Day 4** inherits an already-tested core and gains the *authentic* mock target (the LLM).
   M08's mock mechanic transfers directly to `CatalogAgent(llm_client=...)`.
 - **Day-1 catalog code is untouched** — no Notifier, no injected collaborator added to
