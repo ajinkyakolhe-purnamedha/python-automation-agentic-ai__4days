@@ -1,0 +1,46 @@
+# Lab 9 — CI workflow. Fill every TODO, save as .github/workflows/tests.yml,
+# then watch it go green in the Actions tab (your instructor pushes the shared
+# repo in the code-along; your own push is the lab Stretch).
+
+name: tests
+
+on:
+  # TODO: trigger on push to the `main` branch, on every pull_request,
+  #       and allow manual runs (workflow_dispatch)
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false          # one Python version failing must NOT cancel the others
+      matrix:
+        # TODO: run the suite across Python "3.10", "3.11", "3.12"
+        python-version: []
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # this project is uv-based (uv sync / uv run — same as every course command)
+      - uses: astral-sh/setup-uv@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        # TODO: install deps into a fresh venv for this Python  (uv sync)
+        run: echo "replace me with the install command"
+
+      - name: Run tests with coverage
+        run: |
+          # TODO: run the suite with coverage + reports, e.g.
+          #   uv run pytest --cov --cov-report=xml \
+          #     --html=report.html --self-contained-html --junitxml=junit.xml
+
+      - name: Upload report
+        if: always()            # upload even when tests FAIL — that's when you need it
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report-${{ matrix.python-version }}
+          path: |
+            # TODO: list the artifacts to keep — report.html, coverage.xml, junit.xml

@@ -1,0 +1,38 @@
+[project]
+name = "product-catalog"
+version = "0.4.0"
+description = "Acuity workshop reference solution — a product catalog that grows from a class to an agentic AI across 4 days."
+requires-python = ">=3.10"
+dependencies = [
+    # First needed in Lab 3 (FastAPI). Labs 1–2 are pure stdlib — no install needed.
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "pydantic>=2.6",
+    "requests>=2.31",
+    "openai>=1.30",
+]
+
+[dependency-groups]
+# `uv sync` installs these by default (no --extra needed).
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "pytest-html>=4.1",
+    "pytest-mock>=3.12",
+    "httpx>=0.27",
+]
+
+[tool.uv]
+package = false   # a project we run in-tree (uv run / uvx), not a wheel to build & install
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "integration: tests that hit a live FastAPI server (slow)",
+    "eval: golden-prompt evaluation cases (Day 4)",
+]
+
+[tool.coverage.run]
+source = ["catalog"]
+branch = true

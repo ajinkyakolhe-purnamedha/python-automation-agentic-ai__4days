@@ -1,2 +1,9 @@
 private_*
 capstone-project/solution/
+m10-*
+m11-*
+m12-*
+
+# Python bytecode
+__pycache__/
+*.pyc
