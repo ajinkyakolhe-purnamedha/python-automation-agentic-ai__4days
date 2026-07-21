@@ -17,6 +17,7 @@
 - **Decorators are used, never written** (`@pytest.fixture`, `@pytest.mark.parametrize`). No custom decorators in student-facing code.
 - **All validation is Pydantic.** `get_products` returns `list[Product]` via `Product.model_validate`.
 - **Never commit** `__pycache__/` or `*.pyc`.
+- **`capstone-project/solution/` is `.gitignore`d (per CLAUDE.md — solution is intentionally uncommitted).** *Execution amendment (2026-07-21):* solution changes (`get_products`, `test_server.py`, `test_get_products.py`, `test_storage.py`) are **on-disk reference only** — used to compute acceptance numbers and as the answer key — and are **NOT committed**. The tracked/shipped copies live in the module starters (`modules/m0N-.../lab/starter/**`). Committed deliverables are `modules/**`, `docs/**`, the outline, `.gitignore`, and `capstone-project/checkpoints/day-3-start/**`. Solution-reference files are created/verified by the controller, not via reviewed subagent tasks.
 - **Each lab README ends** on a runnable command whose expected output is shown; for Day 3 that command is the module's `pytest` run showing `N passed`.
 - **Slides** are Marp (`marp: true`, `theme: acuity` frontmatter); render `.md` → `.html` with the Marp CLI.
 - **Run commands** are uv-based: `uv run pytest ...` from a working copy (`capstone-project/solution` or a student `my-catalog`).
