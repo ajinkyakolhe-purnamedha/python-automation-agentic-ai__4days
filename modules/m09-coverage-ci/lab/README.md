@@ -25,7 +25,7 @@ cat ../../modules/m09-coverage-ci/lab/starter/pyproject-additions.toml   # block
 
 ## What to implement
 - **`pyproject.toml`** — point coverage at `source = ["catalog"]`, `branch = true`, and register the `integration` marker (paste the two blocks from `pyproject-additions.toml` and fill their TODOs).
-- **`tests.yml`** — the triggers (`push` · `pull_request` · `workflow_dispatch`); the `python-version` matrix (`"3.10"`, `"3.11"`, `"3.12"`); install (`pip install -e ".[dev]"`); the pytest+coverage command; and the artifact upload.
+- **`tests.yml`** — the triggers (`push` · `pull_request` · `workflow_dispatch`); the `python-version` matrix (`"3.10"`, `"3.11"`, `"3.12"`); install (`uv sync` — this project is uv-based, dev deps live in `[dependency-groups]`); the `uv run pytest` + coverage command; and the artifact upload.
 
 ## Steps
 1. Paste the `pyproject-additions.toml` blocks into your `pyproject.toml` and fill their TODOs; copy `.github/` into `my-catalog/`.
@@ -66,7 +66,7 @@ uv run pytest --cov --cov-report=term-missing -q
 ```
 ...
 TOTAL   155   26   18   0   83%
-32 passed
+31 passed
 ```
 
 ## Stretch

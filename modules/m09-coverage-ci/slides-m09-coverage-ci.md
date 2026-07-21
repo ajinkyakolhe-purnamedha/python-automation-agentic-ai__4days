@@ -82,9 +82,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5     # this project is uv-based
       - uses: actions/setup-python@v5
-      - run: pip install -e ".[dev]"
-      - run: pytest
+      - run: uv sync                     # installs the [dependency-groups] dev tools
+      - run: uv run pytest
 ```
 ---
 # 2.3 · The matrix + the green check

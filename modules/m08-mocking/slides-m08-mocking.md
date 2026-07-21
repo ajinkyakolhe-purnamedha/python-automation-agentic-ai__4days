@@ -56,7 +56,7 @@ def test_create_then_get_roundtrip():
     assert client.post("/products", json=body).status_code == 201
     assert client.get("/products/900").json()["name"] == "Test"
 
-def test_missing_is_404():
+def test_missing_returns_404():
     assert client.get("/products/999").status_code == 404
 ```
 

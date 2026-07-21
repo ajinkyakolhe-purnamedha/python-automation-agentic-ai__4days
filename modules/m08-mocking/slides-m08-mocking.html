@@ -48,7 +48,7 @@ client = TestClient(app)
     <span class="hljs-keyword">assert</span> client.post(<span class="hljs-string">&quot;/products&quot;</span>, json=body).status_code == <span class="hljs-number">201</span>
     <span class="hljs-keyword">assert</span> client.get(<span class="hljs-string">&quot;/products/900&quot;</span>).json()[<span class="hljs-string">&quot;name&quot;</span>] == <span class="hljs-string">&quot;Test&quot;</span>
 
-<span class="hljs-keyword">def</span> <span class="hljs-title function_">test_missing_is_404</span>():
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">test_missing_returns_404</span>():
     <span class="hljs-keyword">assert</span> client.get(<span class="hljs-string">&quot;/products/999&quot;</span>).status_code == <span class="hljs-number">404</span>
 </code></pre>
 <h2 id="a-duplicate-id-post-id-1-already-seeded-returns-409--the-same-catalogerror%E2%86%92status-mapping-your-routes-already-do">A duplicate id (POST id 1, already seeded) returns <strong>409</strong> — the same <code>CatalogError</code>→status mapping your routes already do.</h2>

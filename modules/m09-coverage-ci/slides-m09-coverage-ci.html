@@ -71,9 +71,10 @@
     <span class="hljs-attr">runs-on:</span> <span class="hljs-string">ubuntu-latest</span>
     <span class="hljs-attr">steps:</span>
       <span class="hljs-bullet">-</span> <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/checkout@v4</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">uses:</span> <span class="hljs-string">astral-sh/setup-uv@v5</span>     <span class="hljs-comment"># this project is uv-based</span>
       <span class="hljs-bullet">-</span> <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/setup-python@v5</span>
-      <span class="hljs-bullet">-</span> <span class="hljs-attr">run:</span> <span class="hljs-string">pip</span> <span class="hljs-string">install</span> <span class="hljs-string">-e</span> <span class="hljs-string">&quot;.[dev]&quot;</span>
-      <span class="hljs-bullet">-</span> <span class="hljs-attr">run:</span> <span class="hljs-string">pytest</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">run:</span> <span class="hljs-string">uv</span> <span class="hljs-string">sync</span>                     <span class="hljs-comment"># installs the [dependency-groups] dev tools</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">run:</span> <span class="hljs-string">uv</span> <span class="hljs-string">run</span> <span class="hljs-string">pytest</span>
 </code></pre>
 <footer>Acuity Training · Day 3 of 4</footer>
 </section>

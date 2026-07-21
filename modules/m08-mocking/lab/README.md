@@ -16,15 +16,26 @@ run. Done when
 Lab 7 green (`test_models.py` / `test_catalog.py` / `test_storage.py` — 22 passed).
 
 ## Add the new code
-The lab introduces exactly one new file — `catalog/client.py`. It is
-**not** the Day-2 `APIClient`: no retry, no `Session`, no `APIError`. One
-function, `get_products`, that makes the single call that actually leaves
-the machine.
+The lab introduces one new function — `get_products`. It is **not** the
+Day-2 `APIClient`: no retry, no `Session`, no `APIError`. Just the single
+call that actually leaves the machine.
 
-```bash
-# run from my-catalog/
-cp ../../modules/m08-mocking/lab/starter/catalog/client.py catalog/
+You already have a `catalog/client.py` (it holds your Day-2 `APIClient`).
+**Add `get_products` to it — don't overwrite the file** (`import_csv.py`
+still imports `APIClient`). Copy the function out of the starter and paste
+it below your existing class:
+
+```python
+# append to your existing catalog/client.py — `import requests` is already there
+def get_products(base_url: str = "http://localhost:8000") -> list[Product]:
+    """Fetch every product from the catalog API. Returns typed Products."""
+    response = requests.get(f"{base_url}/products", timeout=5)
+    response.raise_for_status()
+    return [Product.model_validate(row) for row in response.json()]
 ```
+
+> Starting fresh from `checkpoints/day-3-start/`? Its `client.py` already
+> has both `APIClient` and `get_products` — skip this step.
 
 ## Get the starter tests
 ```bash
@@ -34,7 +45,7 @@ cp ../../modules/m08-mocking/lab/starter/tests/test_client.py tests/
 
 | File | What |
 |---|---|
-| `catalog/client.py` | **given** — `get_products(base_url)`, the only new production code |
+| `catalog/client.py` | `get_products` **added** to your existing file (above) — the only new production code |
 | `tests/test_server.py` | stubs to fill — drive the real app with `TestClient`; `reset_catalog` fixture is **provided** |
 | `tests/test_client.py` | stubs to fill — mock `catalog.client.requests.get`; `_ok_response` helper is **provided** |
 
@@ -66,7 +77,7 @@ uncontrollable edge, run the cheap thing for real.** This is the exact
 judgment Day 4 reuses to mock the LLM (`CatalogAgent(llm_client=...)`).
 
 ## Steps
-1. Copy `catalog/client.py` in (command above) — that's the only new production code this lab adds.
+1. Add `get_products` to your `catalog/client.py` (above) — the only new production code this lab adds. Don't overwrite the file.
 2. Copy both starter test files into `tests/` (command above).
 3. Fill `test_server.py`. Drive `client` (the module-level `TestClient`, already built for you) exactly like you'd drive `requests` against a live server — `client.get(...)`, `client.post(..., json={...})` — then assert on `.status_code` / `.json()`. Run `uv run pytest tests/test_server.py -q`; watch reds go green.
 4. Fill `test_client.py`. Inside `with patch("catalog.client.requests.get") as mock_get:`, set `mock_get.return_value` (or `.side_effect`) *before* calling `get_products()`. Run `uv run pytest tests/test_client.py -q`.

@@ -1,6 +1,6 @@
 # Lab 9 — add these two blocks to your project's pyproject.toml, then run:
 #   pytest --cov --cov-report=term-missing --html=report.html --self-contained-html
-# (pytest-cov + pytest-html are already in your [project.optional-dependencies].dev)
+# (pytest-cov + pytest-html are already in your [dependency-groups] dev — `uv sync` installs them)
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

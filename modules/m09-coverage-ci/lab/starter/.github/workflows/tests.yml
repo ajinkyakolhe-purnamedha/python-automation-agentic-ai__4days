@@ -20,20 +20,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # this project is uv-based (uv sync / uv run — same as every course command)
+      - uses: astral-sh/setup-uv@v5
+
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: pip
 
       - name: Install
-        run: |
-          python -m pip install --upgrade pip
-          # TODO: install the package with its dev extras  (pip install -e ".[dev]")
+        # TODO: install deps into a fresh venv for this Python  (uv sync)
+        run: echo "replace me with the install command"
 
       - name: Run tests with coverage
         run: |
-          # TODO: run pytest with --cov, --cov-report=xml, an HTML report
-          #       (--html=report.html --self-contained-html) and --junitxml=junit.xml
+          # TODO: run the suite with coverage + reports, e.g.
+          #   uv run pytest --cov --cov-report=xml \
+          #     --html=report.html --self-contained-html --junitxml=junit.xml
 
       - name: Upload report
         if: always()            # upload even when tests FAIL — that's when you need it
