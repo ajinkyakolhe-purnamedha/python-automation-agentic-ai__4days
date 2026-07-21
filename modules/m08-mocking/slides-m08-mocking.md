@@ -9,202 +9,199 @@ footer: "Acuity Training · Day 3 of 4"
 <!-- _class: title -->
 
 # Module 8
-## Mocking & Parametrize — Testing the APIClient
-**5 sections · ~60 min** — doubles → mock → parametrize → unhappy path → workflow
-1 Test doubles · 2 Mock the session · 3 Parametrize · 4 Unhappy path · 5 Import workflow
+## Mocking
+**3 sections · ~40 min** — run it for real → mock the edge → verify + simulate failure
+1 Test the server with TestClient · 2 Mock the network client · 3 Verify + side_effect
 ---
-# M7 tested code with no dependencies. The client has one: a server.
+# When do you actually mock?
 
-The catalog was easy — pure logic, no I/O. But the `APIClient` **talks to a server**, and a unit test can't depend on a live server being up, seeded, and fast.
-
-The fix is the seam you already built: the client takes its `session` by **injection** (M5). In a test, hand it a **fake** one.
----
-<!-- _class: section -->
-
-# Section 1 · Test doubles
-## Don't test against the real server — swap it for a **stand-in you control.**
-## The client's injected `session` is the seam that lets you.
----
-# 1.1 · Why not hit the real server
-
-A real server in a unit test is **slow** (network), **flaky** (down, or the data shifted), and **stateful** (your POST test leaves junk for the next run). Unit tests must be **fast and isolated** — same result every time, no setup.
+You mock at the **boundary** between your code and something you can't (or shouldn't) run in a unit test — the network, a paid API, a clock, an email send. Your own cheap, in-memory logic? Run it for real.
 
 ```text
-real server:  needs uvicorn up + seeded + reachable + reset between runs
-test double:  answers instantly, the same way, every time
+cheap + in-process (a ProductCatalog, a temp file)  →  run it for real     — mocking proves nothing
+uncontrollable edge (the network, an LLM)            →  fake it             — the real thing can't run here
 ```
----
-# 1.2 · A test double — a stand-in you control
 
-You don't need the real session — only its *behavior*: a `.request()` that returns a response. Swap in a **double** through the injection seam from M5.
-
-```python
-client = AccountClient(session=FakeSession(...))   # no network — you decide the answers
-```
----
-# 1.3 · Stub vs mock vs fake
-
-| Double | What it does | You use it to… |
-|---|---|---|
-| **stub** | returns canned answers | feed the code an input |
-| **mock** | records how it was called | **assert** the code called it right |
-| **fake** | a real-but-lightweight impl | stand in for a heavy dependency |
-
-Same idea — swap the real thing — a different question each one answers.
+This module teaches that judgment as a **contrast**: §1 runs the server for real; §2–§3 mock the one call that leaves the machine.
 ---
 <!-- _class: section -->
 
-# Section 2 · Mock the session
-## Give the client a canned response → test its logic with no network.
-## `unittest.mock` builds the double for you **and records the call.**
+# Section 1 · Test the server for real — `TestClient`
+## The catalog is cheap and in-process. Don't mock it — run it.
+## FastAPI's `TestClient` drives your real app with no network.
 ---
-# 2.1 · A hand-written fake session
+# 1.1 · `TestClient` runs your app in-process
 
-The simplest double: a small object with the `.request()` the client calls, returning a canned response. Inject it; the client never knows it isn't real.
+No uvicorn, no sockets — `TestClient` calls your real routes against a real `ProductCatalog`.
 
 ```python
-class FakeSession:
-    def __init__(self, status, payload): self.status, self.payload = status, payload
-    def request(self, method, url, **kw):
-        return FakeResponse(self.status, self.payload)
+from fastapi.testclient import TestClient
+from catalog.server import app
 
-AccountClient(session=FakeSession(200, [{"id": 1, "owner": "Ada", "balance": 1500.0}])).list_accounts()
+client = TestClient(app)
+
+def test_list_returns_seed():
+    r = client.get("/products")
+    assert r.status_code == 200
+    assert len(r.json()) == 5        # the 5 seeded products
 ```
----
-# 2.2 · `unittest.mock` — the double, built for you
 
-`Mock()` fakes any object; set `.return_value` for what a call returns. No class to write — and it **remembers every call.**
+No `@patch` anywhere — the app and its catalog are **real**. Hold that against §2.
+---
+# 1.2 · A round-trip, then the error mappings
 
 ```python
-from unittest.mock import Mock
-session = Mock()
-session.request.return_value = Mock(ok=True, status_code=200,
-    json=lambda: [{"id": 1, "owner": "Ada", "balance": 1500.0}])
-AccountClient(session=session).list_accounts()
-```
----
-# 2.3 · A mock lets you assert *how* it was called
+def test_create_then_get_roundtrip():
+    body = {"id": 900, "name": "Test", "category": "QA", "price": 12.0}
+    assert client.post("/products", json=body).status_code == 201
+    assert client.get("/products/900").json()["name"] == "Test"
 
-Beyond the return value, the mock recorded the call — so you can assert the client sent the **right request** (the GET to the right path), not just that it returned something.
+def test_missing_is_404():
+    assert client.get("/products/999").status_code == 404
+```
+
+A duplicate id (POST id 1, already seeded) returns **409** — the same `CatalogError`→status mapping your routes already do.
+---
+# 1.3 · Isolate the tests — reseed the global
+
+`server.py` holds `catalog` as a **module global**, so a `POST` in one test leaks into the next. An **autouse** fixture reseeds before each test.
 
 ```python
-session.request.assert_called_with("GET", "http://server/accounts", timeout=5)
+import pytest
+from catalog import server
+from catalog.models import ProductCatalog
+from catalog.storage import seed_products
+
+@pytest.fixture(autouse=True)
+def reset_catalog():
+    server.catalog = ProductCatalog(list(seed_products()))
+    yield
 ```
 
-That's the **mock** question: not just "what came back" but "did my code call it correctly".
+That's M7's fixtures idea again — here it buys **test isolation**, not just tidy setup.
+
+<div class="code-along">▶ Code-along now → notebook §1 — the mock vocabulary you'll aim at requests.get; TestClient shown for the lab</div>
 ---
 <!-- _class: section -->
 
-# Section 3 · Parametrize
-## One test body, a **table** of cases — data-driven testing.
-## Run the client against every status code without copy-pasting the test.
+# Section 2 · Mock the network client
+## `get_products` calls `requests.get` — the one thing a unit test can't run.
+## Replace it with a fake you control: `patch` + `MagicMock`.
 ---
-# 3.1 · `@pytest.mark.parametrize` — one test, many cases
+# 2.1 · The thing under test
 
-Instead of five near-identical tests, write **one** and feed it a table of inputs. pytest runs it once per row and reports each separately.
+`catalog/client.py` — no retry, no Session, no APIError. Just one call that leaves the machine.
 
 ```python
-@pytest.mark.parametrize("amount, expected", [(50, 150.0), (0, 100.0)])
-def test_deposit(amount, expected):
-    acct = BankAccount(1, "Ada", 100.0); acct.deposit(amount)
-    assert acct.balance == expected
-```
----
-# 3.2 · Parametrize the status codes
+import requests
+from catalog.models import Product
 
-The real payoff: drive the mocked client across every response code in **one** test — a 2xx returns a model, a 4xx raises `APIError`.
+def get_products(base_url="http://localhost:8000") -> list[Product]:
+    response = requests.get(f"{base_url}/products", timeout=5)
+    response.raise_for_status()
+    return [Product.model_validate(row) for row in response.json()]
+```
+
+Calling this for real needs a running server. A unit test must not depend on that — so we fake `requests.get`.
+---
+# 2.2 · `patch` swaps the real call for a fake
 
 ```python
-@pytest.mark.parametrize("status", [400, 404, 409])
-def test_4xx_raises_apierror(status):
-    client = AccountClient(session=FakeSession(status, {"detail": "no"}))
-    with pytest.raises(APIError):
-        client.list_accounts()
-```
----
-# 3.3 · The one that *does* hit a server
+from unittest.mock import patch, MagicMock
+from catalog.client import get_products
+from catalog.models import Product
 
-Keep a few **integration** tests that drive a live server — but **mark** them, so the fast unit run skips them.
+def test_returns_typed_products():
+    with patch("catalog.client.requests.get") as mock_get:
+        mock_get.return_value.json.return_value = [
+            {"id": 1, "name": "Cable", "category": "Electronics",
+             "price": 499.0, "in_stock": True, "tags": []}]
+        mock_get.return_value.raise_for_status.return_value = None
+        result = get_products()
+    assert isinstance(result[0], Product)     # dicts came back as Products
+```
+
+`return_value` is the fake response; `.json()` returns whatever you decide.
+---
+# 2.3 · Patch where the name is *looked up*
 
 ```python
-@pytest.mark.integration
-def test_against_live_server():
-    client = AccountClient(base_url="http://localhost:8000")   # a real session
-    assert isinstance(client.list_accounts(), list)
+patch("catalog.client.requests.get")   # ✓ where get_products looks it up
 ```
 
-`pytest -m "not integration"` runs the fast suite; CI runs both.
+`client.py` did `import requests`, so `patch("requests.get")` *also* works here (same module object). But the habit that survives — when a file does `from requests import get` — is to patch **the name where the code uses it**: `catalog.client.requests.get`.
 
-<div class="code-along">▶ Code-along now — mock the client, assert the call, parametrize the status codes</div>
+Add `spec=requests.Response` to a fake response and a typo'd attribute (`.jsonn()`) fails loudly instead of returning a silent `MagicMock`.
+
+<div class="code-along">▶ Code-along now → notebook §2 — patch a call, set return_value, assert the typed result</div>
 ---
 <!-- _class: section -->
 
-# Section 4 · Testing the unhappy path
-## Mocks let you trigger failures you **can't** reproduce live — a dropped
-## connection, a timeout — and prove the client recovers (or doesn't).
+# Section 3 · Verify the call + simulate failure
+## A mock records *how* it was called — and can be made to fail on demand.
 ---
-# 4.1 · Force a transient failure — prove `@retry` recovers
+# 3.1 · Assert the right call was made
 
-You can't make a real server blip on cue; a mock can — **fail twice, then succeed.** Assert the client **retried**: the call happened 3 times.
+Beyond "what came back", check the call itself — the URL, the timeout.
 
 ```python
-def test_retry_recovers():
-    session = Mock()
-    session.request.side_effect = [ConnectionError(), ConnectionError(),
-                                   Mock(ok=True, json=lambda: ACCOUNTS)]
-    AccountClient(session=session).list_accounts()
-    assert session.request.call_count == 3      # 2 fails + 1 success
+def test_hits_right_url():
+    with patch("catalog.client.requests.get") as mock_get:
+        mock_get.return_value.json.return_value = []
+        mock_get.return_value.raise_for_status.return_value = None
+        get_products("http://x")
+    mock_get.assert_called_once_with("http://x/products", timeout=5)
 ```
----
-# 4.2 · A 4xx is *never* retried — the policy, proven
 
-A 404 raises `APIError`, not a network error — so `@retry`'s exception tuple never catches it. The mock proves it: called exactly **once**.
+`assert_called_once_with` fails if the URL was wrong, the timeout was dropped, or it was called twice.
+---
+# 3.2 · `side_effect` — make the fake fail
+
+`return_value` gives a fixed result; `side_effect` **raises** (or yields a sequence). Use it to drive your error path.
 
 ```python
-def test_4xx_not_retried():
-    session = Mock()
-    session.request.return_value = Mock(ok=False, status_code=404, text="x")
-    with pytest.raises(APIError):
-        AccountClient(session=session).list_accounts()
-    assert session.request.call_count == 1      # no retry on a 4xx
+import requests, pytest
+
+def test_network_error_propagates():
+    with patch("catalog.client.requests.get") as mock_get:
+        mock_get.side_effect = requests.ConnectionError("down")
+        with pytest.raises(requests.ConnectionError):
+            get_products()
 ```
----
-<!-- _class: section -->
 
-# Section 5 · Testing the import workflow
-## Mock the client, feed the importer a tricky CSV, and assert the **report** —
-## the three buckets M6 promised. That report is the day's real deliverable.
+You can't make the real network drop on cue — the mock can.
 ---
-# 5.1 · Mock the client, run the importer
+# 3.3 · The test that actually earns its keep
 
-The importer takes the client by **injection** too — so a test passes a fake that creates accounts but raises `APIError` on a duplicate id. Feed it rows with a bad one and a dup.
+"The network raised" just re-raises. The *valuable* failure test: the server returns a **bad row**, and your client refuses to hand it back.
 
 ```python
-client = FakeClient(dup_ids={1})        # a fake that 409s on id 1
-report = import_accounts(rows, client)  # rows: one good, one dup, one invalid
-```
----
-# 5.2 · Assert the report — the three buckets stay apart
+from pydantic import ValidationError
 
-The report *is* the contract: a bad row lands in `validation_errors`, a duplicate in `api_errors`, the rest in `created`. Pinning this shape is what Day 3 exists for.
-
-```python
-assert report["summary"]["created"] == 1
-assert report["summary"]["validation_errors"] == 1
-assert report["summary"]["api_errors"] == 1
+def test_rejects_malformed_response():
+    with patch("catalog.client.requests.get") as mock_get:
+        mock_get.return_value.json.return_value = [
+            {"id": 1, "name": "X", "category": "c", "price": -5,   # price < 0
+             "in_stock": True, "tags": []}]
+        mock_get.return_value.raise_for_status.return_value = None
+        with pytest.raises(ValidationError):
+            get_products()
 ```
 
-<div class="code-along">▶ Code-along now — test `@retry` recovery + the import report's three buckets</div>
+`Product.model_validate` guards the boundary — garbage from the server never leaks out as a `Product`. M4's Pydantic, earning its keep in a test.
+
+<div class="code-along">▶ Code-along now → notebook §3 — assert_called_once_with, then side_effect, then malformed→ValidationError</div>
 ---
 <!-- _class: lab -->
 
-# 🧪 Lab 8 — Test the `APIClient` (mocked + integration)
+# 🧪 Lab 8 — TestClient vs. Mocking
 
-**~60 min** · open `labs/lab-08-test-apiclient.md`
+**~50 min** · open `modules/m08-mocking/lab/README.md`
 
-You'll write (testing your `Product` `APIClient` + importer):
-- `tests/test_client.py` — mock the session; typed returns + `APIError`; `parametrize` `200/400/404/500`; **`@retry` recovery + no-retry-on-4xx**
-- `tests/test_import.py` — mock the client, run `import_csv`, assert the **report's 3 buckets**
-- a `TestIntegration` class marked `@pytest.mark.integration` (live server)
+You'll write:
+- `tests/test_server.py` — drive the real app with `TestClient` (no mocks): count 5, round-trip, 404, 409
+- `tests/test_client.py` — mock `catalog.client.requests.get`: typed return, right URL, `side_effect` error, malformed→`ValidationError`
 
-**The same mocking pattern returns on Day 4 to mock the LLM.**
+**The judgment:** run the cheap server for real; fake the uncontrollable network.
+
+Run `uv run pytest tests/test_server.py tests/test_client.py -q` → **9 passed**.
