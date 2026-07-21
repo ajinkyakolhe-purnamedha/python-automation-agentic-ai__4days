@@ -26,7 +26,7 @@ still imports `APIClient`). Copy the function out of the starter and paste
 it below your existing class:
 
 ```python
-# append to your existing catalog/client.py — `import requests` is already there
+# append to your existing catalog/client.py — `import requests` and `Product` are already there (from Lab 5)
 def get_products(base_url: str = "http://localhost:8000") -> list[Product]:
     """Fetch every product from the catalog API. Returns typed Products."""
     response = requests.get(f"{base_url}/products", timeout=5)
