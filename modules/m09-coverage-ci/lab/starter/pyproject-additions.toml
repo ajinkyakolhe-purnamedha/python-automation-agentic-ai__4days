@@ -1,0 +1,16 @@
+# Lab 9 — add these two blocks to your project's pyproject.toml, then run:
+#   pytest --cov --cov-report=term-missing --html=report.html --self-contained-html
+# (pytest-cov + pytest-html are already in your [project.optional-dependencies].dev)
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"   # --strict-markers makes a typo'd marker an error, not a silent skip
+markers = [
+    # TODO: register the "integration" marker, e.g.
+    #   "integration: tests that hit a live FastAPI server (slow)",
+]
+
+[tool.coverage.run]
+# TODO: tell coverage what to measure —
+#   source = ["catalog"]
+#   branch = true        # count branch coverage, not just lines
