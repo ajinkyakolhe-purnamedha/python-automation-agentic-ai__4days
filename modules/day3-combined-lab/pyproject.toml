@@ -1,0 +1,34 @@
+[project]
+name = "day3-combined-lab"
+version = "0.1.0"
+description = "Day 3 combined lab — pytest basics + mocking + coverage/CI over the product catalog, self-contained."
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "pydantic>=2.6",
+    "requests>=2.31",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "pytest-html>=4.1",
+    "pytest-mock>=3.12",
+    "httpx>=0.27",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "integration: tests that hit a live FastAPI server (slow)",
+]
+
+[tool.coverage.run]
+source = ["catalog"]
+branch = true
