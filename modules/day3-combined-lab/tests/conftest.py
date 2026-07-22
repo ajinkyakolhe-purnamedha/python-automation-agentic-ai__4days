@@ -1,4 +1,4 @@
-"""Lab 7 — shared fixtures (PROVIDED — use these, you don't need to edit them).
+"""Day 3 Combined Lab — shared fixtures (PROVIDED — use these, don't edit them).
 
 A fixture is a function that returns test data; ask for it by adding its
 name as a parameter to a test, and pytest hands each test its OWN fresh copy.

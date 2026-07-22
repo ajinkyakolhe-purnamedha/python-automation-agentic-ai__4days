@@ -59,10 +59,16 @@ timeout=5)`), and use `side_effect` to force a failure. **Mock the
 uncontrollable edge; run the cheap thing for real.** *(Day 4 reuses this exact
 pattern to mock the LLM.)*
 
-**Try it**
-- In `_ok_response`, delete `spec=requests.Response` from the `MagicMock(...)`.
-  A mock without a spec says *yes to everything* — a typo'd attribute would
-  pass silently. Restore it and the fake fails loudly. That's why it's there.
+**Try it** — see a mock lie. Add one line to `test_get_products_returns_typed_list`,
+right after `mock_get.return_value = _ok_response(rows)`:
+```python
+    _ok_response(rows).jsonn()   # typo: jsonn, not json
+```
+Rerun. With `spec=requests.Response` on the fake it fails loudly —
+`AttributeError`, no such attribute. Now delete `spec=requests.Response` from
+`_ok_response` and rerun: the typo passes silently, because a spec-less mock
+says *yes to everything*. Restore the spec (and remove the typo line) — that's
+why the spec is there.
 
 ## Topic 3 · coverage & CI
 
