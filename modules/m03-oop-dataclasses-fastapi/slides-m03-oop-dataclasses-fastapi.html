@@ -121,6 +121,15 @@
   .along code{font-family:var(--mono);font-size:.92em;color:var(--accent);font-weight:600}
   .along b{font-weight:700}
 
+  /* predict callout — a "pause & ask the room" beat (retrieval before reveal) */
+  .predict{display:flex;align-items:center;gap:13px;margin:0 0 6px;
+         background:linear-gradient(100deg,rgba(15,169,160,.12),transparent 92%);
+         border:1px solid var(--accent2);border-radius:12px;padding:12px 18px;font-size:18px;color:var(--ink)}
+  .predict .q{flex:none;width:30px;height:30px;border-radius:8px;
+         background:linear-gradient(120deg,var(--accent2),var(--accent));color:#fff;
+         display:flex;align-items:center;justify-content:center;font-size:15px}
+  .predict b{font-weight:700;color:var(--accent2)}
+
   /* pipeline steps as chips/cards */
   .steps{display:flex;flex-direction:column;gap:13px;margin:2px 0 24px}
   .step{display:flex;gap:16px;align-items:center;font-size:20px;line-height:1.35;background:var(--code-bg);
@@ -281,6 +290,7 @@ ada.owner = "Ada K." # set with the dot too</code></pre>
       <p class="eyebrow">1.4 · Methods</p>
       <h1 class="h">Behavior, with guardrails</h1>
       <p class="lead">A <strong>method</strong> is a function inside the class; its first parameter is <code class="inl">self</code>. A method can <code class="inl">raise</code> to enforce a rule, so the data can't go invalid.</p>
+      <div class="predict"><span class="q">🔮</span><div><b>Predict:</b> call <code class="inl">withdraw(9999)</code> on a ₹1500 account — does it silently go negative, or stop you?</div></div>
 <pre class="code"><code class="py">class BankAccount:
     ...
     def withdraw(self, amount):

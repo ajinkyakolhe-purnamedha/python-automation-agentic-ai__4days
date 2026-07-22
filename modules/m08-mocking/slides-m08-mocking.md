@@ -15,7 +15,7 @@ footer: "Acuity Training · Day 3 of 4"
 ---
 # When do you actually mock?
 
-You mock at the **boundary** between your code and something you can't (or shouldn't) run in a unit test — the network, a paid API, a clock, an email send. Your own cheap, in-memory logic? Run it for real.
+M7 closed on *"the one edge you can't run for real is the network."* **This is that edge.** You mock at the **boundary** between your code and something you can't (or shouldn't) run in a unit test — the network, a paid API, a clock, an email send. Your own cheap, in-memory logic? Run it for real.
 
 ```text
 cheap + in-process (a ProductCatalog, a temp file)  →  run it for real     — mocking proves nothing
@@ -102,12 +102,44 @@ def get_products(base_url="http://localhost:8000") -> list[Product]:
     return [Product.model_validate(row) for row in response.json()]
 ```
 
-Calling this for real needs a running server. A unit test must not depend on that — so we fake `requests.get`.
+Calling this for real needs a running server. A unit test must not depend on that — so we fake `requests.get`. But first: what *is* a fake?
 ---
-# 2.2 · `patch` swaps the real call for a fake
+# 2.2 · Meet `MagicMock` — a fake that says yes to everything
+
+A `MagicMock` auto-creates every attribute and call you ask of it — and **records them**. You set `.return_value` to control what a call hands back.
 
 ```python
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
+
+resp = MagicMock()                       # a fake with no shape yet
+resp.json.return_value = [{"id": 1, "name": "Cable"}]
+resp.raise_for_status.return_value = None
+
+resp.json()                 # [{'id': 1, 'name': 'Cable'}] — exactly what you set
+resp.json.assert_called()   # the mock recorded that call
+```
+
+`resp.json` is itself a mock; `.return_value` is what *calling* it returns. Build the fake, control it, inspect it — no network in sight.
+---
+# 2.3 · Mocks lie by default — make them honest
+
+A mock hands back **another mock** for anything you didn't set. And a mock is *truthy* — so a sloppy assertion passes against nothing.
+
+```python
+resp = MagicMock()
+assert resp.jsn()          # typo'd .json — a mock is truthy, so this passes
+```
+
+**🔮 Predict:** does that `assert` fail, or pass?
+
+It **passes** — `resp.jsn()` returns a mock (not your data, not an error), and every mock is truthy, so a whole class of bugs hides behind a green test. `spec=requests.Response` makes the fake honest: an attribute the real object lacks now **raises** instead of returning a silent mock.
+---
+# 2.4 · `patch` swaps the real call for a fake
+
+`get_products` calls `requests.get` **directly** — you can't hand it a fake. `patch` replaces that name with a `MagicMock` for the length of the `with` block, then restores it.
+
+```python
+from unittest.mock import patch
 from catalog.client import get_products
 from catalog.models import Product
 
@@ -121,9 +153,9 @@ def test_returns_typed_products():
     assert isinstance(result[0], Product)     # dicts came back as Products
 ```
 
-`return_value` is the fake response; `.json()` returns whatever you decide.
+Read the chain: `mock_get.return_value` is the fake **response**; its `.json.return_value` is the fake **rows** — the same moves as 2.2, now injected by `patch`.
 ---
-# 2.3 · Patch where the name is *looked up*
+# 2.5 · Patch where the name is *looked up*
 
 ```python
 patch("catalog.client.requests.get")   # ✓ where get_products looks it up
@@ -142,7 +174,7 @@ Add `spec=requests.Response` to a fake response and a typo'd attribute (`.jsonn(
 ---
 # 3.1 · Assert the right call was made
 
-Beyond "what came back", check the call itself — the URL, the timeout.
+A mock records **every** call (you saw that in 2.2) — so beyond "what came back", you can check the call itself: the URL, the timeout.
 
 ```python
 def test_hits_right_url():
@@ -175,6 +207,8 @@ You can't make the real network drop on cue — the mock can.
 
 "The network raised" just re-raises. The *valuable* failure test: the server returns a **bad row**, and your client refuses to hand it back.
 
+**🔮 Predict:** the server sends `price: -5` — does `get_products` return the row, or raise?
+
 ```python
 from pydantic import ValidationError
 
@@ -191,6 +225,15 @@ def test_rejects_malformed_response():
 `Product.model_validate` guards the boundary — garbage from the server never leaks out as a `Product`. M4's Pydantic, earning its keep in a test.
 
 <div class="code-along">▶ Code-along now → notebook §3 — assert_called_once_with, then side_effect, then malformed→ValidationError</div>
+---
+# Recap — the judgment you now have
+
+| The code | What to do | Why |
+|---|---|---|
+| cheap, in-process (catalog, temp file) | **run it for real** — `TestClient` | mocking it would prove nothing |
+| the network edge (`requests.get`) | **mock it** — `patch` + `MagicMock` | you can't run it in a unit test |
+
+A mock earns its keep three ways: **return** a controlled result, **verify** the exact call was made, **simulate** the failure you can't reproduce on cue.
 ---
 <!-- _class: lab -->
 

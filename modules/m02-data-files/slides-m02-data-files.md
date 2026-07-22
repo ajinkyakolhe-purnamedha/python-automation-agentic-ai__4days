@@ -101,6 +101,8 @@ header, data = rows[0], rows[1:]        # header row vs the data rows
 
 Write with `DictWriter`, read with `DictReader` — but numbers and bools come back as **text**, and a list field can't fit a flat cell at all. **Coerce on load.**
 
+**🔮 Predict:** you saved `price` as `499.0`. Read it back from the CSV — a `float`, or a `str`?
+
 ```python
 row = next(csv.DictReader(open("products.csv")))
 row["price"]          # "499.0"   ← a string, not a float!
@@ -196,6 +198,8 @@ back = json.load(open("acct.json"))                  # file → dict again
 # 2.7 · Gotcha — JSON keys are always strings
 
 JSON object keys can only be strings. Dump a store keyed by an **int** id, load it back, and the keys are now `"1", "2", "3"` — a lookup with the int `1` misses.
+
+**🔮 Predict:** you dump `{1: acct}` keyed by the int `1`. After loading, does `store[1]` still find it?
 
 ```python
 json.dump({1: acct}, open("store.json", "w"))

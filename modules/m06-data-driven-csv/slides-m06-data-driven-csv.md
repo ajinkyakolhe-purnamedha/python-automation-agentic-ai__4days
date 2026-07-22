@@ -10,8 +10,8 @@ footer: "Acuity Training · Day 2 of 4"
 
 # Module 6
 ## Data-Driven Automation
-**3 sections · ~50 min** — concept first, then build it in Python
-1 The pattern · 2 Validating the source · 3 Drive the API + report
+**3 sections · ~50 min** — the map, then one road driven all the way
+1 The landscape · 2 Validating the source · 3 Drive the API + report
 ---
 # The capstone: a file becomes API actions
 
@@ -25,39 +25,87 @@ This *is* what "automate API workflows" means on the job.
 ---
 <!-- _class: section -->
 
-# Section 1 · The pattern
-## **Data-driven** = the data lives *outside* the code; the logic stays *fixed*.
-## Write the workflow once — run it over 1 row or 10,000. That's the whole idea.
+# Section 1 · The landscape
+## the idea → four directions → chaining → reading a lot → config & secrets
+**Why now:** the map before the road. You're about to build **one** of these all the way — it helps to know which one, and what the others would have cost you.
 ---
-# 1.1 · What "data-driven" means
+# 1.1 · Data-driven — and you'll meet it three times
 
-The **logic is fixed**; the **data lives outside** it — a file, a spreadsheet, a table. You don't edit code to add a record; you add a row.
+The **logic is fixed**; the **data lives outside** it. You don't edit code to add a record — **ops adds a row, not a developer.**
 
 ```text
-code (fixed):   for each record →  validate  →  send  →  record the result
-data (varies):  products.csv  →  10 rows today, 10,000 tomorrow — same code
+code (fixed):   for each record →  validate  →  act  →  record the result
+data (varies):  products.csv    →  20 rows today, 10,000 next month — same code
 ```
+
+That sentence isn't only today. It's a **spiral** you meet twice more this week:
+
+| | the data | drives |
+|---|---|---|
+| **M6 · today** | `products.csv` | **API calls** |
+| **M8 · Day 3** | a table of inputs | **tests** — `@pytest.mark.parametrize` |
+| **M12 · Day 4** | `golden_queries.json` | **AI evals** |
+
+Same sentence, three targets. QA already knows it as **data-driven testing**.
 ---
-# 1.2 · Why it's the automation workhorse
+# 1.2 · Four directions, one loop
 
-- **Scale** — one row or ten thousand, the code is identical.
-- **Separation** — ops hands you a CSV; no developer needed to "add the data".
-- **One place to maintain** — the workflow is written once.
-
-QA engineers know this as **data-driven testing**: one test, many input rows.
----
-# 1.3 · The shape — source → process → report
-
-Every data-driven job is the same three parts:
+Every one of these is `source → process → sink`. **Only the ends change:**
 
 ```text
-SOURCE          PROCESS (per record)        SINK
-a CSV / JSON  →  validate → act (API)   →   a report of what happened
+file → API       import / ingest         ← TODAY, and the lab
+API → file/DB    export, reporting       ← needs pagination   (1.4)
+API → API        sync, migration         ← needs chaining     (1.3)
+config → code    declarative behaviour   ← env & secrets      (1.5)
 ```
 
-The **report is the deliverable** — the input file is just the input.
+We drive the **first one all the way** — read, validate, send, report. The other three are the *same loop* with a different source and sink. The next three slides are the map, so you know what you're **not** building today — and what it would take.
 
 <div class="code-along">▶ Code-along now → notebook Section 1 — the shape, in code: one loop over records</div>
+---
+# 1.3 · Chaining — A's output is B's input
+
+The second call needs something only the first can tell you — usually **the id the server assigned**.
+
+```python
+created = client.create_product(p)        # A — the server decides the id
+client.update_price(created.id, 499)      # B — needs A's answer to exist
+```
+
+**The gotcha:** a chain fails *halfway*. A succeeded, B didn't — the world is now half-updated, and **no exception says so**. Real chains either record every step, or make B safe to re-run.
+
+> Which is exactly why §3 hands back a **report** and not a boolean. Half-done is the normal case, not the exception.
+---
+# 1.4 · Reading a lot — pagination, rate limits, backoff
+
+`GET /products` returns 5. What does it return when there are 10,000? **Not 10,000.** Real APIs hand back one *page* at a time:
+
+```python
+page = 1
+while True:
+    batch = client.list_products(page=page)   # ?page=1, ?page=2 …
+    if not batch:                             # an empty page means done
+        break
+    yield from batch
+    page += 1
+```
+
+And they push back when you go too fast: **429 Too Many Requests**, usually carrying a **`Retry-After`** header that says exactly when to return. Honour it — guessing gets you throttled or banned. That's M5's retry loop again, except **the server supplies the wait.**
+
+**Your catalog doesn't paginate.** Real ones do — know the shape.
+---
+# 1.5 · Config & secrets — the data that isn't rows
+
+Not everything that lives outside the code is a CSV. The **base URL**, the **API key**, the batch size — they change per environment, and they are **not code**.
+
+```python
+BASE  = os.environ.get("CATALOG_URL", "http://localhost:8000")   # a default is fine
+TOKEN = os.environ["CATALOG_TOKEN"]      # ← no default: crash NOW if it's missing
+```
+
+**The trap is the second line.** A `.get()` default on a *secret* doesn't fail — it quietly runs your whole import unauthenticated, or against the wrong server, and tells you nothing. **Fail loudly at startup, not silently at row 4,000.**
+
+Secrets live in the environment (or a `.env` you never commit) — never in source, never in the URL (M5 §2.5).
 ---
 <!-- _class: section -->
 

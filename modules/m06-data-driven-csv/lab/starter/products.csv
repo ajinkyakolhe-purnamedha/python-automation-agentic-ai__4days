@@ -1,6 +1,7 @@
 id,name,category,price,in_stock
 100,Wireless Mouse,Electronics,1299,true
 101,USB-C Hub,Electronics,2499,true
+1,USB-C Cable,Electronics,499,true
 102,Laptop Stand,Office,1799,true
 103,Notebook A5,Stationery,149,true
 104,Desk Lamp,Home,999,true

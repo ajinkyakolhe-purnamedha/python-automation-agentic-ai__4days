@@ -3,7 +3,10 @@ capstone-project/solution/
 m10-*
 m11-*
 m12-*
-
+.superpowers
+superpowers
 # Python bytecode
 __pycache__/
 *.pyc
+# local planning docs (superpowers) — kept locally, not tracked
+docs/

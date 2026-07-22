@@ -30,23 +30,40 @@ M9 answers both — **coverage** (measure) and **CI** (automate) — and turns t
 ---
 # 1.1 · Green ≠ tested
 
-A suite can pass with whole functions **never called**. "All green" tells you the tests you *wrote* pass — not that the code is *covered*.
+A suite can pass with whole branches **never executed**. Here's a two-branch function whose only test hits **one** branch:
 
-```text
-20 tests, all green ✓   …but withdraw() and delete() were never run by any of them
+```python
+def apply_discount(price, is_member):
+    if is_member:
+        return round(price * 0.9, 2)   # branch A — the test hits this
+    return price                       # branch B — never run
+
+assert apply_discount(100, True) == 90.0   # ✓ all green
 ```
 
-You can't see that gap by reading pass/fail — you **measure** it.
+**🔮 Predict:** the test passes — is every line tested?
+
+No — branch B never ran, and pass/fail can't show you that. You **measure** it.
 ---
 # 1.2 · `pytest-cov` — the %, and the missing lines
 
-`pytest --cov` reports how much of each file ran; `term-missing` names the **exact lines** no test reached.
+`pytest --cov` reports how much of each file ran; `term-missing` names the **exact lines** no test reached. `--cov-branch` also checks each `if` went **both** ways.
 
 ```bash
-pytest --cov=catalog --cov-report=term-missing
-# catalog/server.py    79%   Missing: 46-49, 54-57   ← those routes never ran
-# catalog/storage.py   55%   Missing: 39-59          ← the CSV helpers, untested
+pytest --cov=catalog --cov-report=term-missing --cov-branch
 ```
+
+```text
+Name                 Stmts   Miss Branch  Cover   Missing
+---------------------------------------------------------
+catalog/models.py       74      0     12   100%
+catalog/server.py       38      8      0    79%   46-49, 54-57
+catalog/storage.py      43     18      6    55%   39-47, 51-59
+---------------------------------------------------------
+TOTAL                  155     26     18    83%
+```
+
+83% isn't a failure — the **Missing** column found real gaps: the PATCH/DELETE routes and the CSV helpers your tests never touched.
 ---
 # 1.3 · Coverage is a floor, not a target
 
@@ -121,6 +138,8 @@ Make coverage a **rule**, not a vibe. `--cov-fail-under` fails the build if cove
 ```bash
 pytest --cov=catalog --cov-fail-under=80     # exit 1 if below 80%
 ```
+
+**🔮 Predict:** your suite sits at 83%. A teammate adds a feature with no tests and it drops to 78% — what does CI do?
 ---
 # 3.3 · The payoff — a quality gate
 

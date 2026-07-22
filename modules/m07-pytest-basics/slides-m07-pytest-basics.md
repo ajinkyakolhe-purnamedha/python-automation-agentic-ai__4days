@@ -13,16 +13,26 @@ footer: "Acuity Training · Day 3 of 4"
 **3 sections · ~40 min** — assert → raises + parametrize → fixtures + tmp_path
 1 Test functions + assert · 2 pytest.raises + @parametrize · 3 Fixtures + tmp_path
 ---
-# Real logic, real objects — no mocks here
+# What we lock down today
 
-Everything in M7 tests **pure logic with real objects**: real `Product`s, a real `ProductCatalog`, a real temp file. Nothing here talks to the network or a server.
+M7–M9 turn "code that runs" into a suite that **proves itself and can't silently regress** — all on the one repo you've grown since Day 1.
+
+- **M7 · pytest** → the test suite *(this module)*
+- **M8 · mocking** → test the network edge you can't run for real
+- **M9 · coverage + CI** → the quality gate: red can't merge
+
+End state: your catalog — **tested, measured, and gated.**
+---
+# Why test? Two days of code, zero proof it still works.
+
+You have a `Product`, a `ProductCatalog`, storage, a server. Change one line tomorrow — did `search` still return the right rows? did `add` still reject a duplicate id? **Right now you'd re-check by hand, every time — or not at all.**
 
 ```text
-M7 today:  real Product · real ProductCatalog · real temp file    — no fakes needed
-M8 later:  a network call you can't run in a unit test           — that's where mocks earn their keep
+by hand:  run it, eyeball the output, hope        — once, then never again
+a test:   assert the result, re-run in seconds     — every change, forever
 ```
 
-**No mocks here — mocks are M08's edge.** You only reach for a mock at a boundary you can't run for real; today, everything is cheap enough to run for real.
+A **test** is a saved check that re-runs in seconds. The payoff isn't catching today's bug — it's **changing code tomorrow and knowing instantly if you broke something.**
 ---
 <!-- _class: section -->
 
@@ -54,6 +64,8 @@ def test_math():
     assert 1 + 1 == 3
 ```
 
+**🔮 Predict:** does pytest just print `FAILED`, or something more?
+
 ```text
     def test_math():
 >       assert 1 + 1 == 3
@@ -62,22 +74,26 @@ E       assert 2 == 3
 
 **This** is why pytest over `unittest` — no `assertEqual(a, b)` ceremony, just `assert`, and pytest tells you exactly what didn't match.
 ---
-# 1.3 · A real object: `Product`
+# 1.3 · A real object — `Product`
+
+Same `assert` — just a richer object. Build a `Product`, then assert its fields and its defaults.
 
 ```python
 from catalog.models import Product
 
 p = Product(id=1, name="Cable", category="Electronics", price=499.0)
 assert p.price == 499.0
-assert p.tags == []          # the model's default
+assert p.tags == []                       # the model's default
 ```
 
-Same idea as `1 + 1 == 2` — you're just asserting on a richer object.
+No new test API — it's the same `assert 1 + 1 == 2`, now aimed at a domain object.
 ---
-# 1.4 · A query: seed a `ProductCatalog`
+# 1.4 · A query — seed a `ProductCatalog`
+
+Arrange a whole catalog, then assert on what it returns — no server, no mock, just the object.
 
 ```python
-from catalog.models import ProductCatalog
+from catalog.models import Product, ProductCatalog
 
 cat = ProductCatalog([
     Product(id=1, name="Cable", category="Electronics", price=499.0),
@@ -85,8 +101,6 @@ cat = ProductCatalog([
 ])
 assert len(cat.list_all()) == 2
 ```
-
-Arrange the catalog, then assert on what it returns — no server, no mock, just the object.
 ---
 # 1.5 · Discovery and selection
 
@@ -108,16 +122,17 @@ pytest -v                      # print each test's name + PASSED/FAILED
 ---
 # 2.1 · Assert that it raises
 
-`with pytest.raises(Exc, match="..."):` passes **only if** that exception fires inside the block.
+`with pytest.raises(Exc, match="..."):` passes **only if** that exception fires inside the block. (Notice the `cat = ProductCatalog([...])` setup we build by hand — hold that thought.)
 
 ```python
 import pytest
-from catalog.models import CatalogError, Product
+from catalog.models import CatalogError, Product, ProductCatalog
 
-def test_add_rejects_duplicate_id(seeded_catalog):
+def test_add_rejects_duplicate_id():
+    cat = ProductCatalog([Product(id=10, name="Cable", category="Electronics", price=499.0)])
     dup = Product(id=10, name="dup", category="x", price=1.0)
     with pytest.raises(CatalogError, match="already exists"):
-        seeded_catalog.add(dup)
+        cat.add(dup)
 ```
 ---
 # 2.2 · Use the narrowest exception
@@ -127,22 +142,23 @@ def test_add_rejects_duplicate_id(seeded_catalog):
 ```python
 # ✗ too broad — a TypeError from a real bug would also satisfy this
 with pytest.raises(Exception):
-    seeded_catalog.add(dup)
+    cat.add(dup)
 
 # ✓ narrow — only CatalogError satisfies it; anything else still fails the test
 with pytest.raises(CatalogError, match="already exists"):
-    seeded_catalog.add(dup)
+    cat.add(dup)
 ```
 ---
 # 2.3 · A second error path: missing id
 
 ```python
-def test_get_missing_raises(seeded_catalog):
+def test_get_missing_raises():
+    cat = ProductCatalog([Product(id=10, name="Cable", category="Electronics", price=499.0)])
     with pytest.raises(CatalogError, match="not found"):
-        seeded_catalog.get(999)
+        cat.get(999)
 ```
 
-Same shape as 2.1 — a different rule, a different message to match.
+Same shape as 2.1 — a different rule, a different message. **Notice: that `cat = ProductCatalog([...])` line is now in every test.** Hold that thought — Section 3 kills it.
 ---
 # 2.4 · Model rules raise `ValidationError`
 
@@ -175,6 +191,8 @@ def test_rejects_invalid(field, value, msg):
     assert msg in str(exc.value)
 ```
 
+**🔮 Predict:** one function, three rows — how many tests does `pytest -v` report?
+
 ```bash
 $ pytest -v
 test_rejects_invalid[name--at least 1 character] PASSED
@@ -192,7 +210,7 @@ test_rejects_invalid[id-0-greater than or equal to 1] PASSED
 ---
 # 3.1 · From repeated setup to a fixture
 
-Building the same `ProductCatalog([...])` in every test is copy-paste waiting to drift. A fixture builds it **once per test**, fresh.
+Every test in Section 2 opened with the same `cat = ProductCatalog([...])` — copy-paste waiting to drift. Extract it into a **fixture**: pytest builds it **fresh, once per test**.
 
 ```python
 import pytest
@@ -206,7 +224,7 @@ def seeded_catalog():
     ])
 ```
 
-A test **asks** for it by naming it as a parameter — no import, no manual call.
+A test **asks** for it by naming it as a parameter — `def test_x(seeded_catalog):` — no import, no manual call. The repeated `cat = ProductCatalog([...])` from every Section 2 test now lives in **one** place.
 ---
 # 3.2 · Fresh per test — isolation, proven
 
@@ -249,6 +267,27 @@ tmp_path (real)  →  proves: "save then load gives back the same catalog" — t
 ```
 
 <div class="code-along">▶ Code-along now → notebook §3 — a seeded_catalog fixture, move it to conftest.py, then the tmp_path save→load round-trip</div>
+---
+# Recap — the three moves you now have
+
+| Move | Tool | What it pins down |
+|---|---|---|
+| assert a **result** | `assert` + pytest discovery | any value or object your code returns |
+| assert a **failure** | `pytest.raises` + `@parametrize` | the error paths — many cases, one body |
+| kill repeated **setup** | `@fixture` + `tmp_path` | fresh state per test, real file I/O |
+
+One test file per unit — `test_models`, `test_catalog`, `test_storage` — each red until you fill it, green once you do.
+---
+# What today bought you — and the one thing it *can't* test
+
+Every test in M7 ran **for real** — real `Product`s, a real `ProductCatalog`, a real temp file — because all of it is **cheap to run.** That's why you never wrote a single mock.
+
+```text
+M7 (today):  real objects, real temp file   — cheap to run for real → no mocks
+M8 (next):   a network call to the API       — can't run in a unit test → mocks earn their keep
+```
+
+**A mock is what you reach for at the one edge you can't run for real.** That edge is the network — and M8 starts exactly there.
 ---
 <!-- _class: lab -->
 

@@ -75,6 +75,8 @@ ada.owner = "Ada K." # set with the dot too
 
 A **method** is a function inside the class; its first parameter is `self`, the object. M2's loose functions become methods — and a method can `raise` to enforce a rule, so the data can't go invalid.
 
+**🔮 Predict:** call `withdraw(9999)` on a ₹1500 account — does it silently go negative, or stop you?
+
 ```python
 class BankAccount:
     ...

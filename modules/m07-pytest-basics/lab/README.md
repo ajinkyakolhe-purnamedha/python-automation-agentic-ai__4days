@@ -4,6 +4,7 @@
 
 > **Concepts used:** `assert` + pytest discovery, `pytest.raises`, `@pytest.mark.parametrize`, `@pytest.fixture` / `conftest.py`, and the built-in `tmp_path` fixture → `../codealong-m07-pytest-basics.ipynb`.
 > **No mocks in this lab.** Everything here is pure logic and real objects — models, the catalog, a real temp file. You only reach for a mock at an external edge, and the first one of those (the network) is M08's job, not this one.
+> **Want to warm up on real `pytest` first?** Play in [`../sandbox_playground/`](../sandbox_playground/README.md) — a runnable BankAccount test project where you can break a test and add your own. Not graded.
 
 ## Goal
 Write the catalog's first real test suite: pin the Pydantic **models**' promises, the **`ProductCatalog`** class's behavior (happy paths *and* error paths), and **storage**'s save→load round-trip on a real temp file. Done when

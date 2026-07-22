@@ -236,35 +236,72 @@
         <div class="secdiv"></div>
         <div class="secmeta">
           <p class="eyebrow">Section</p>
-          <h1>The pattern</h1>
-          <div class="sub">what data-driven means → why it scales → source / process / report<br><b>Why now:</b> name the shape once, and every job after this is the same shape.</div>
+          <h1>The landscape</h1>
+          <div class="sub">the idea → four directions → chaining → reading a lot → config &amp; secrets<br><b>Why now:</b> the map before the road. You're about to build <b>one</b> of these all the way — it helps to know which one, and what the others would have cost you.</div>
         </div>
       </div>
     </section>
 
     <section class="slide">
-      <p class="eyebrow">1.1 · What "data-driven" means</p>
-      <h1 class="h">The logic is fixed; the data lives outside</h1>
-      <p class="lead">You don't edit code to add a record — <strong>you add a row</strong>. The workflow never changes.</p>
-<pre class="map"> code (fixed):   for each record → validate → send → record the result
- data (varies):  products.csv → 10 rows today, 10,000 tomorrow — same code</pre>
+      <p class="eyebrow">1.1 · The idea</p>
+      <h1 class="h">You'll meet this three times</h1>
+      <p class="lead">The <strong>logic is fixed</strong>; the <strong>data lives outside</strong> it. You don't edit code to add a record — <strong>ops adds a row, not a developer</strong>.</p>
+<pre class="map"> code (fixed):   for each record → validate → act → record the result
+ data (varies):  products.csv → 20 rows today, 10,000 next month — same code</pre>
+      <p class="lead">That sentence isn't only today. It's a <strong>spiral</strong> you meet twice more this week:</p>
+      <table class="moves">
+        <tr><td class="tool">M6 · today</td><td><code>products.csv</code> drives <b>API calls</b></td></tr>
+        <tr><td class="tool">M8 · Day 3</td><td>a table of inputs drives <b>tests</b> — <code>@pytest.mark.parametrize</code></td></tr>
+        <tr><td class="tool">M12 · Day 4</td><td><code>golden_queries.json</code> drives <b>AI evals</b></td></tr>
+      </table>
+      <p class="lead soft">Same sentence, three targets. QA already knows it as <strong>data-driven testing</strong>.</p>
     </section>
 
     <section class="slide">
-      <p class="eyebrow">1.2 · Why it's the automation workhorse</p>
-      <h1 class="h">Scale · separation · one place to maintain</h1>
-      <p class="lead"><strong>Scale</strong> — one row or ten thousand, the code is identical.<br><strong>Separation</strong> — ops hands you a CSV; no developer needed to "add the data".<br><strong>One place to maintain</strong> — the workflow is written once.</p>
-      <p class="lead soft">QA engineers know this by another name: <strong>data-driven testing</strong> — one test, many input rows. Day 3 does exactly that with <code class="inl">@parametrize</code>.</p>
-    </section>
-
-    <section class="slide">
-      <p class="eyebrow">1.3 · The shape</p>
-      <h1 class="h">source → process → report</h1>
-      <p class="lead">Every data-driven job is the same three parts:</p>
-<pre class="map"> SOURCE          PROCESS (per record)        SINK
- a CSV / JSON  ─▶  validate → act (API)   ─▶  a report of what happened</pre>
-      <p class="lead soft">The <strong>report is the deliverable</strong> — the input file is just the input. Miss that and you've written a script that "worked" and told nobody what it did.</p>
+      <p class="eyebrow">1.2 · The map</p>
+      <h1 class="h">Four directions, one loop</h1>
+      <p class="lead">Every one of these is <code class="inl">source → process → sink</code>. <strong>Only the ends change:</strong></p>
+<pre class="map"> file → API       import / ingest          <b>← TODAY, and the lab</b>
+ API → file/DB    export, reporting        ← needs pagination   (1.4)
+ API → API        sync, migration          ← needs chaining     (1.3)
+ config → code    declarative behaviour    ← env &amp; secrets      (1.5)</pre>
+      <p class="lead soft">We drive the <strong>first one all the way</strong> — read, validate, send, report. The other three are the <em>same loop</em> with a different source and sink. The next three slides are the map, so you know what you're <strong>not</strong> building today — and what it would take.</p>
       <div class="along"><span class="play">▶</span><div>Code-along now → notebook <b>Section 1</b> — the shape, in code: one loop over records</div></div>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">1.3 · Chaining</p>
+      <h1 class="h">A's output is B's input</h1>
+      <p class="lead">The second call needs something only the first can tell you — usually <strong>the id the server assigned</strong>.</p>
+<pre class="code"><code class="py">created = client.create_product(p)        # A — the server decides the id
+client.update_price(created.id, 499)      # B — needs A's answer to exist</code></pre>
+      <p class="lead"><strong>The gotcha:</strong> a chain fails <em>halfway</em>. A succeeded, B didn't — the world is now half-updated, and <strong>no exception says so</strong>. Real chains either record every step, or make B safe to re-run.</p>
+      <p class="lead soft">Which is exactly why §3 hands back a <strong>report</strong> and not a boolean. Half-done is the normal case, not the exception.</p>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">1.4 · Reading a lot</p>
+      <h1 class="h">Pagination, rate limits, backoff</h1>
+      <p class="lead"><code class="inl">GET /products</code> returns 5. What does it return when there are 10,000? <strong>Not 10,000.</strong> Real APIs hand back one <em>page</em> at a time:</p>
+<pre class="code"><code class="py">page = 1
+while True:
+    batch = client.list_products(page=page)   # ?page=1, ?page=2 …
+    if not batch:                             # an empty page means done
+        break
+    yield from batch
+    page += 1</code></pre>
+      <p class="lead">And they push back when you go too fast: <strong>429 Too Many Requests</strong>, usually carrying a <strong><code class="inl">Retry-After</code></strong> header saying exactly when to return. Honour it — guessing gets you throttled. That's M5's retry loop again, except <strong>the server supplies the wait</strong>.</p>
+      <p class="lead soft"><strong>Your catalog doesn't paginate.</strong> Real ones do — know the shape.</p>
+    </section>
+
+    <section class="slide">
+      <p class="eyebrow">1.5 · Config &amp; secrets</p>
+      <h1 class="h">The data that isn't rows</h1>
+      <p class="lead">Not everything living outside the code is a CSV. The <strong>base URL</strong>, the <strong>API key</strong>, the batch size — they change per environment, and they are <strong>not code</strong>.</p>
+<pre class="code"><code class="py">BASE  = os.environ.get("CATALOG_URL", "http://localhost:8000")   # a default is fine
+TOKEN = os.environ["CATALOG_TOKEN"]      # ← no default: crash NOW if it's missing</code></pre>
+      <p class="lead"><strong>The trap is the second line.</strong> A <code class="inl">.get()</code> default on a <em>secret</em> doesn't fail — it quietly runs your whole import unauthenticated, or against the wrong server, and tells you nothing. <strong>Fail loudly at startup, not silently at row 4,000.</strong></p>
+      <p class="lead soft">Secrets live in the environment (or a <code class="inl">.env</code> you never commit) — never in source, never in the URL (M5 §2.5).</p>
     </section>
 
     <section class="slide section">
@@ -371,7 +408,7 @@ json.dump(report, open("import_report.json", "w"), indent=2)</code></pre>
 
 <div class="nav">
   <button id="prev" aria-label="Previous slide">◀</button>
-  <span class="count" id="count">1 / 15</span>
+  <span class="count" id="count">1 / 17</span>
   <button id="next" aria-label="Next slide">▶</button>
 </div>
 <div class="hint">← → to navigate</div>

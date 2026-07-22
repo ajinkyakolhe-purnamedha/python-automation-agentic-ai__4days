@@ -121,6 +121,15 @@
   .along code{font-family:var(--mono);font-size:.92em;color:var(--accent);font-weight:600}
   .along b{font-weight:700}
 
+  /* predict callout — a "pause & ask the room" beat (retrieval before reveal) */
+  .predict{display:flex;align-items:center;gap:13px;margin:0 0 6px;
+         background:linear-gradient(100deg,rgba(15,169,160,.12),transparent 92%);
+         border:1px solid var(--accent2);border-radius:12px;padding:12px 18px;font-size:18px;color:var(--ink)}
+  .predict .q{flex:none;width:30px;height:30px;border-radius:8px;
+         background:linear-gradient(120deg,var(--accent2),var(--accent));color:#fff;
+         display:flex;align-items:center;justify-content:center;font-size:15px}
+  .predict b{font-weight:700;color:var(--accent2)}
+
   /* pipeline steps as chips/cards */
   .steps{display:flex;flex-direction:column;gap:13px;margin:2px 0 24px}
   .step{display:flex;gap:16px;align-items:center;font-size:20px;line-height:1.35;background:var(--code-bg);
@@ -312,6 +321,7 @@ print(type(None))      # &lt;class 'NoneType'&gt;</code></pre>
       <p class="eyebrow">1.3 · Type hints — just a hint</p>
       <h1 class="h">A hint, not a rule</h1>
       <p class="lead">A variable can hold <strong>any</strong> type, and you can rebind it at runtime. A <strong>type hint</strong> (<code class="inl">name: type</code>) documents intent — it is <strong>not enforced</strong>.</p>
+      <div class="predict"><span class="q">🔮</span><div><b>Predict:</b> after <code class="inl">balance: float = 1500.0</code>, does <code class="inl">balance = "frozen"</code> raise?</div></div>
       <pre class="code"><code class="py">balance = 1500.0      # float now...
 balance = "frozen"    # ...str later — Python allows it
 
@@ -468,6 +478,7 @@ open_account(id=2, owner="Lin", balance=800.0)</code></pre>
       <p class="eyebrow">4.2 · try / except / else / finally</p>
       <h1 class="h">Handle the failure, recover</h1>
       <p class="lead"><code class="inl">try</code> the risky code, <code class="inl">except</code> the failure, <code class="inl">else</code> on success, <code class="inl">finally</code> always (cleanup).</p>
+      <div class="predict"><span class="q">🔮</span><div><b>Predict:</b> with <b>no</b> <code class="inl">try</code>, what does <code class="inl">find_account(accounts, 99)</code> do to the program?</div></div>
       <pre class="code"><code class="py">try:    acct = find_account(accounts, 99)
 except LookupError as err: print("not found:", err)
 else:   print("found:", acct["owner"])

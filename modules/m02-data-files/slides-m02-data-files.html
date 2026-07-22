@@ -121,6 +121,15 @@
   .along code{font-family:var(--mono);font-size:.92em;color:var(--accent);font-weight:600}
   .along b{font-weight:700}
 
+  /* predict callout — a "pause & ask the room" beat (retrieval before reveal) */
+  .predict{display:flex;align-items:center;gap:13px;margin:0 0 6px;
+         background:linear-gradient(100deg,rgba(15,169,160,.12),transparent 92%);
+         border:1px solid var(--accent2);border-radius:12px;padding:12px 18px;font-size:18px;color:var(--ink)}
+  .predict .q{flex:none;width:30px;height:30px;border-radius:8px;
+         background:linear-gradient(120deg,var(--accent2),var(--accent));color:#fff;
+         display:flex;align-items:center;justify-content:center;font-size:15px}
+  .predict b{font-weight:700;color:var(--accent2)}
+
   /* pipeline steps as chips/cards */
   .steps{display:flex;flex-direction:column;gap:13px;margin:2px 0 24px}
   .step{display:flex;gap:16px;align-items:center;font-size:20px;line-height:1.35;background:var(--code-bg);
@@ -306,6 +315,7 @@ header, data = rows[0], rows[1:]        # header row vs the data rows
       <p class="eyebrow">1.8 · Gotcha — CSV is the type-loss format</p>
       <h1 class="h">Every cell reads back a string</h1>
       <p class="lead">Write with <code class="inl">DictWriter</code>, read with <code class="inl">DictReader</code> — but numbers and bools come back as <strong>text</strong>, and a list field can't fit a flat cell at all.</p>
+      <div class="predict"><span class="q">🔮</span><div><b>Predict:</b> you saved <code class="inl">price</code> as <code class="inl">499.0</code>. Read it back from the CSV — a <code class="inl">float</code>, or a <code class="inl">str</code>?</div></div>
 <pre class="code"><code class="py">row = next(csv.DictReader(open("products.csv")))
 row["price"]          # "499.0"   ← a string, not a float!
 float(row["price"])   # 499.0     ← you must coerce it back yourself
@@ -401,6 +411,7 @@ back = json.load(open("acct.json"))                  # file → dict again</code
       <p class="eyebrow">2.7 · Gotcha — JSON keys are always strings</p>
       <h1 class="h">Your int ids come back as text</h1>
       <p class="lead">JSON object keys can only be strings. Dump a store keyed by <strong>int</strong> id, load it back, and the keys are now <code class="inl">"1", "2", "3"</code> — a lookup with the int <code class="inl">1</code> misses.</p>
+      <div class="predict"><span class="q">🔮</span><div><b>Predict:</b> you dump <code class="inl">{1: acct}</code> keyed by the int <code class="inl">1</code>. After loading, does <code class="inl">store[1]</code> still find it?</div></div>
 <pre class="code"><code class="py">json.dump({1: acct}, open("store.json", "w"))
 store = json.load(open("store.json"))
 list(store.keys())    # ['1']        ← "1", a string — not 1
@@ -576,7 +587,7 @@ load_json("catalog.json")             # round-trips identically</code></pre>
 
 <div class="nav">
   <button id="prev" aria-label="Previous slide">◀</button>
-  <span class="count" id="count">1 / 30</span>
+  <span class="count" id="count">1 / 35</span>
   <button id="next" aria-label="Next slide">▶</button>
 </div>
 <div class="hint">← → to navigate</div>

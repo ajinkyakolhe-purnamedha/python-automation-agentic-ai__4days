@@ -34,15 +34,18 @@ cp ../../modules/m06-data-driven-csv/lab/starter/products.csv  data/      # the 
 | File | You write |
 |---|---|
 | `starter/import_csv.py` | the three loop bodies (validate / create / record) + the `health()` fail-fast in `main()` |
-| `starter/products.csv` | **given** — 19 rows: ids 100–115 clean, ids 116–118 deliberately bad (file lines 18–20) |
+| `starter/products.csv` | **given** — 20 rows: ids 100–115 clean, ids 116–118 deliberately malformed (file lines 19–21), plus one well-formed row the server will refuse (find it) |
 
 ## Steps
 
-1. **Read `data/products.csv` before you write anything.** It's given, and it's rigged — 19 rows, and the last 3 exercise a different failure path each. Open it and find them; knowing what *should* fail is how you'll know the report is right:
+1. **Read `data/products.csv` before you write anything.** It's given, and it's rigged — 20 rows, of which **4 fail**. Knowing what *should* fail is how you'll know your report is right. Three you can spot by eye:
    - empty name → validation error
    - `price = -50` → validation error
    - `price = not-a-number` → validation error (nothing to coerce)
-   - (want a 4th? add a row whose `id` duplicates the server's seed (1–5) → API error 409)
+
+   The fourth you **cannot find by reading the file**. It's a perfectly well-formed row — right types, sane values, nothing to complain about — that the *server* will refuse anyway. The only way to spot it in advance is to know what's already in the catalog (`curl localhost:8000/products`, or read the server's seed).
+
+   That's not a gotcha; it's the whole point of §3.1. Bad data is a property of the **file** — you can find it with the file alone. A 409 is a property of the **world** — the same row is fine on an empty server and refused on this one. Two different failures, found two different ways, fixed by two different people. That's why they get two buckets.
 
 2. **Write `catalog/import_csv.py`.** The loop over `csv.DictReader` is given (note `enumerate(..., start=2)`, so your row numbers match the file once the header is counted). Each row lands in exactly one of three buckets — each TODO is one `try` around one call:
    - **validate** — turn the row into a `Product`. If the model refuses it, the row must **not** reach the API: record `{"row", "input", "errors"}` in `validation_errors` — where `errors` is the structured list the exception carries (module-4 §2.2) — and move on.
@@ -71,17 +74,20 @@ cp ../../modules/m06-data-driven-csv/lab/starter/products.csv  data/      # the 
 
 ## Expected output
 
-**Terminal 2 — the importer.** This is all of it: three warnings and the summary. The `INFO … added product` lines are *not* missing — they're in terminal 1 (see step 5).
+**Terminal 2 — the importer.** This is all of it: four warnings and the summary. The `INFO … added product` lines are *not* missing — they're in terminal 1 (see step 5).
 
 ```
 $ uv run python -m catalog.import_csv data/products.csv
-WARNING __main__: row 18 failed validation
+WARNING __main__: row 4 API error: 409: Product id 1 already exists
 WARNING __main__: row 19 failed validation
 WARNING __main__: row 20 failed validation
+WARNING __main__: row 21 failed validation
 
-19 rows  |  created 16  ·  validation errors 3  ·  API errors 0
+20 rows  |  created 16  ·  validation errors 3  ·  API errors 1
 report → import_report.json
 ```
+
+Row 4 is the one you couldn't see in the file — `USB-C Cable`, sitting innocently between the USB-C Hub and the Laptop Stand. Nothing is wrong with it. The server just already has an id 1.
 
 **Terminal 1 — the server**, meanwhile, logs one line per accepted row:
 
@@ -94,15 +100,21 @@ INFO catalog.models: added product id=115 name='Trail Running Shoes'
 ```json
 // import_report.json (excerpt)
 {
-  "summary": { "rows_read": 19, "created": 16,
-                "validation_errors": 3, "api_errors": 0 },
+  "summary": { "rows_read": 20, "created": 16,
+                "validation_errors": 3, "api_errors": 1 },
   "validation_errors": [
-    { "row": 18, "input": {"name": "", ...},
+    { "row": 19, "input": {"name": "", ...},
       "errors": [{"loc": ["name"],
                   "msg": "String should have at least 1 character"}] }
+  ],
+  "api_errors": [
+    { "row": 4, "input": {"id": "1", "name": "USB-C Cable", ...},
+      "status": 409, "detail": "Product id 1 already exists" }
   ]
 }
 ```
+
+Read those two entries side by side — it's the module in one screen. The validation error points at a **field** (`loc: ["name"]`): fix the spreadsheet. The API error points at a **status** (`409`): fix the conflict. Same report, two audiences.
 
 ## Make it pass
 

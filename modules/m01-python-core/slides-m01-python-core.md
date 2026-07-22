@@ -87,6 +87,8 @@ print(type(None))      # <class 'NoneType'>
 
 A variable can hold **any** type, and you can rebind it to another at runtime. A **type hint** (`name: type`) documents intent — it is **not enforced**.
 
+**🔮 Predict:** after `balance: float = 1500.0`, does `balance = "frozen"` raise?
+
 ```python
 balance = 1500.0      # float now...
 balance = "frozen"    # ...str later — Python allows it
@@ -218,6 +220,8 @@ def find_account(accounts, acct_id):
 # 4.2 · try / except / else / finally
 
 `try` the risky code, `except` the failure, `else` runs only on success, `finally` always runs (cleanup).
+
+**🔮 Predict:** with **no** `try`, what does `find_account(accounts, 99)` do to the program?
 
 ```python
 try:    acct = find_account(accounts, 99)
