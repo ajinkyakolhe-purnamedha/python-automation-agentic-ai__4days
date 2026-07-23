@@ -20,7 +20,7 @@ By 6 PM, a **local FastAPI server** running on your laptop, serving a `Product` 
 
 - Module 1 → Python core → Lab 1: `Product` foundation
 - Module 2 → Data structures, files, modules → Lab 2: Persistent catalog
-- Module 3 → OOP, decorators, FastAPI → Lab 3: Local API server
+- Module 3 → OOP, dataclasses, FastAPI → Lab 3: Local API server
 
 **Same repo carries through Day 2, 3, 4.** No throwaway demos.
 ---

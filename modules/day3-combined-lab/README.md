@@ -84,14 +84,13 @@ Name                    Stmts   Miss Branch BrPart  Cover   Missing
 -------------------------------------------------------------------
 catalog/__init__.py         1      0      0      0   100%
 catalog/cli.py             60     60      6      0     0%   11-105
-catalog/client.py          56     32      4      0    40%   ...
-catalog/decorators.py      26     15      4      0    37%   ...
+catalog/client.py          60     36      6      0    37%   ...
 catalog/import_csv.py      52     52      4      0     0%   17-101
 catalog/models.py          74     20     12      2    70%   ...
 catalog/server.py          38     14      0      0    63%   37-41, 46-49, 54-57, 62
 catalog/storage.py         43     20      6      1    49%   25-26, 39-47, 51-59
 -------------------------------------------------------------------
-TOTAL                     350    213     36      3    37%
+TOTAL                     328    202     34      3    36%
 ```
 That 37% is not one gap, it's several, and the **Missing** column names each
 one: `cli.py` and `import_csv.py` sit at 0% because this trimmed suite never

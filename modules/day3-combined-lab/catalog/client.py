@@ -3,15 +3,12 @@
 Drives the FastAPI server from `server.py` end-to-end. Every method returns
 a Pydantic `Product` (or list of them), so callers stay typed all the way
 down — no raw dicts leak out of this module.
-
-The class wears the M5 `@retry` decorator so transient network failures
-don't kill a bulk-import run. On Day 4, the agent's tools will literally
-*be* these methods.
 """
+
+import time
 
 import requests
 
-from .decorators import retry
 from .models import Product, ProductCreate, ProductUpdate
 
 DEFAULT_TIMEOUT = 5.0
@@ -37,11 +34,17 @@ class APIClient:
 
     # ---- low-level ----
 
-    @retry(times=3, delay=0.2, exceptions=(requests.ConnectionError, requests.Timeout))
     def _request(self, method, path, **kwargs):
         url = f"{self.base_url}{path}"
         kwargs.setdefault("timeout", self.timeout)
-        response = self._session.request(method, url, **kwargs)
+        for attempt in range(1, 4):
+            try:
+                response = self._session.request(method, url, **kwargs)
+                break
+            except (requests.ConnectionError, requests.Timeout):
+                if attempt == 3:
+                    raise
+                time.sleep(0.2)
         if not response.ok:
             raise APIError(response.status_code, self._extract_detail(response))
         return response
