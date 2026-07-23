@@ -90,16 +90,3 @@ class APIClient:
         for product in self.list_products():
             counts[product.category] = counts.get(product.category, 0) + 1
         return counts
-
-
-# ---- Day-3 tiny network client (mock seam for M08). NOT the APIClient. ----
-
-def get_products(base_url: str = DEFAULT_BASE_URL) -> list[Product]:
-    """Fetch every product from the catalog API. Returns typed Products.
-
-    Deliberately minimal — no retry, no Session, no APIError. One call that
-    leaves the machine, so M08 has an honest thing to mock.
-    """
-    response = requests.get(f"{base_url}/products", timeout=5)
-    response.raise_for_status()
-    return [Product.model_validate(row) for row in response.json()]
