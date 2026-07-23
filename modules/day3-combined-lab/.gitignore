@@ -1,0 +1,8 @@
+# Local artifacts from running this lab — never commit these.
+.venv/
+uv.lock
+.coverage
+.pytest_cache/
+htmlcov/
+report.html
+__pycache__/
