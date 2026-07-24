@@ -16,7 +16,7 @@ Usage::
     result = catalog_agent.run_sync(
         "What's our most expensive product?",
         deps=ProductCatalog(seed_products()),
-        model="openai:gpt-4o-mini",
+        model="google:gemini-2.5-flash",   # or "openai:gpt-4o-mini"
     )
     print(result.output)
 """

@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>Module 11 · Building LLM Applications — Acuity Day 4</title>
+<title>Module 11 · Building AI Agents with Pydantic AI — Acuity Day 4</title>
 <style>
   :root{
     --bg:#E7EAF1; --bg2:#EFF1F7; --slide:#FFFFFF; --ink:#131A24; --ink-soft:#586477;
@@ -120,14 +120,6 @@
   .along code{font-family:var(--mono);font-size:.92em;color:var(--accent);font-weight:600}
   .along b{font-weight:700}
 
-  .predict{display:flex;align-items:center;gap:13px;margin:0 0 6px;
-         background:linear-gradient(100deg,rgba(15,169,160,.12),transparent 92%);
-         border:1px solid var(--accent2);border-radius:12px;padding:12px 18px;font-size:18px;color:var(--ink)}
-  .predict .q{flex:none;width:30px;height:30px;border-radius:8px;
-         background:linear-gradient(120deg,var(--accent2),var(--accent));color:#fff;
-         display:flex;align-items:center;justify-content:center;font-size:15px}
-  .predict b{font-weight:700;color:var(--accent2)}
-
   .steps{display:flex;flex-direction:column;gap:13px;margin:2px 0 24px}
   .step{display:flex;gap:16px;align-items:center;font-size:20px;line-height:1.35;background:var(--code-bg);
         border:1px solid var(--code-line);border-radius:12px;padding:14px 18px}
@@ -215,22 +207,58 @@
       <span class="tglow"></span>
       <p class="kicker">Acuity Training · Day 4</p>
       <h1><span class="grad">Module 11</span></h1>
-      <h2>Building LLM Applications</h2>
-      <p class="metaline"><b>~40 min</b> · then 80 min lab — the two directions of the code↔LLM seam</p>
+      <h2>Building AI Agents with <b>Pydantic AI</b></h2>
+      <p class="metaline"><b>~40 min</b> · then 40 min lab — from "hello world" to a tool-calling agent</p>
     </section>
 
-    <!-- 2 · Module 11 — two directions -->
+    <!-- 2 · What is an AI Agent? -->
     <section class="slide">
       <p class="eyebrow">Module 11 · Overview</p>
-      <h1 class="h">Two directions of one seam</h1>
-      <div class="steps">
-        <div class="step"><span class="k">Code → LLM</span><div>Your Python produces raw data; the LLM <b>synthesizes</b> the answer (delete the parsing code)</div></div>
-        <div class="step"><span class="k">LLM → Code</span><div><b>Tool calling</b>: the LLM decides which of your functions to run</div></div>
-      </div>
-      <p class="lead soft">Direction 1 is the agent loop's <code class="inl">observe</code> step, taught on its own first. Then we close the loop.</p>
+      <h1 class="h">What is an AI Agent?</h1>
+      <p class="lead">An LLM that can <strong>take actions</strong> — not just answer questions.</p>
+      <table class="moves">
+        <tr><td class="tool">Chatbot</td><td class="tool">Agent</td></tr>
+        <tr><td>You ask → it answers from training data</td><td>You ask → it <strong>calls your code</strong> → reads the result → answers</td></tr>
+        <tr><td>One turn: question → answer</td><td>A <strong>loop</strong>: plan → act → observe → repeat</td></tr>
+      </table>
+      <p class="lead soft" style="margin-top:18px">The "agent" is just a <strong>while loop</strong> around an LLM call. The LLM decides what to do; your Python code does it.</p>
     </section>
 
-    <!-- 3 · Section 1 divider -->
+    <!-- 3 · The Agent Loop -->
+    <section class="slide">
+      <p class="eyebrow">The agent loop</p>
+      <h1 class="h">Plan → Act → Observe</h1>
+      <pre class="map">
+User: "What's our most expensive product?"
+
+  <b>PLAN</b>     LLM reads the question + available tools
+           → decides: call list_products()
+
+  <b>ACT</b>      Your code runs list_products()
+           → returns product data
+
+  <b>OBSERVE</b>  LLM reads the result
+           → "Mechanical Keyboard, ₹5,499"</pre>
+      <p class="lead soft" style="margin-top:18px">The LLM <strong>names</strong> a function + arguments. Your code runs it. The result goes back. Repeat until done.</p>
+    </section>
+
+    <!-- 4 · What is a "tool"? -->
+    <section class="slide">
+      <p class="eyebrow">Core concept</p>
+      <h1 class="h">A "tool" is just a Python function the LLM can call</h1>
+      <pre class="code"><code class="py">def search_products(term: str) -> list[dict]:
+    """Find products whose name contains the term."""
+    return [p for p in products if term.lower() in p["name"].lower()]</code></pre>
+      <p class="lead" style="margin-top:18px">The LLM never runs your code. It reads three things:</p>
+      <ul class="clean">
+        <li>The <strong>function name</strong> → <code class="inl">search_products</code></li>
+        <li>The <strong>docstring</strong> → "Find products whose name contains the term"</li>
+        <li>The <strong>parameter types</strong> → <code class="inl">term: str</code></li>
+      </ul>
+      <p class="lead soft">…and decides when to call it, like you'd read API docs.</p>
+    </section>
+
+    <!-- 5 · Section 1 divider -->
     <section class="slide section">
       <span class="ghost">1</span>
       <div class="secrow">
@@ -238,86 +266,75 @@
         <div class="secdiv"></div>
         <div class="secmeta">
           <p class="eyebrow">Section</p>
-          <h1>The LLM processes your code's output</h1>
-          <div class="sub">code → LLM · <b>synthesis instead of parsing</b></div>
+          <h1>Hello World with Pydantic AI</h1>
+          <div class="sub"><code class="inl">pip install pydantic-ai</code> · <b>your first agent in 4 lines</b></div>
         </div>
       </div>
     </section>
 
-    <!-- 4 · 1.1 -->
+    <!-- 6 · 1.1 What is Pydantic AI? -->
     <section class="slide">
-      <p class="eyebrow">1.1 · Stop writing output-processing code</p>
-      <h1 class="h">Hand the raw data to the LLM</h1>
-      <p class="lead">Your Python pulls raw data from several places. The old way: write merge + parse + format + branch code. <strong>The new way:</strong> hand the raw output to the LLM and ask for the answer.</p>
-      <pre class="code"><code class="py">raw = [t.__dict__ for t in tickets]          # output returned by your code
-answer = llm.chat.completions.create(model="gpt-4o-mini",
-    messages=[{"role": "user", "content": f"What should on-call look at first?\n{raw}"}]
-).choices[0].message.content</code></pre>
-      <p class="lead soft" style="margin-top:16px">The LLM <strong>is</strong> the processing layer — no parsing code.</p>
+      <p class="eyebrow">1.1 · What is Pydantic AI?</p>
+      <h1 class="h">FastAPI for AI agents</h1>
+      <p class="lead">A Python framework for building AI agents — by the team that built Pydantic.</p>
+      <table class="moves">
+        <tr><td class="tool">You write</td><td class="tool">Framework handles</td></tr>
+        <tr><td>Tool functions with type hints</td><td>JSON schema generation for the LLM</td></tr>
+        <tr><td><code class="inl">@agent.tool</code> decorator</td><td>Tool registration + the agent loop</td></tr>
+        <tr><td><code class="inl">agent.run_sync(prompt)</code></td><td>Message passing, retries, convergence</td></tr>
+      </table>
+      <pre class="code" data-lang="bash" style="margin-top:14px"><code class="py">uv add pydantic-ai               # installs all providers (OpenAI, Gemini, etc.)</code></pre>
     </section>
 
-    <!-- 5 · 1.2 -->
+    <!-- 7 · 1.1b API key setup -->
     <section class="slide">
-      <p class="eyebrow">1.2 · The code you stop writing</p>
-      <h1 class="h">7 lines of logic → 1 question</h1>
-      <pre class="code"><code class="py"># WITHOUT the LLM — you write the merge/parse/format yourself:
-products = catalog.list_all()
-by_cat = {}
-for p in products:
-    by_cat.setdefault(p.category, []).append(p)
-most_exp = max(products, key=lambda p: p.price)
-answer = f"Most expensive: {most_exp.name} (₹{most_exp.price}).\n"
-answer += "\n".join(f"{cat}: {len(ps)} items" for cat, ps in by_cat.items())</code></pre>
-      <pre class="code" style="margin-top:14px"><code class="py"># WITH the LLM — hand it the data and ask:
-products = [p.model_dump() for p in catalog.list_all()]
-answer = llm.chat.completions.create(model="gpt-4o-mini", messages=[
-    {"role": "user",
-     "content": f"Most expensive product? Summarize by category.\n{products}"}
-]).choices[0].message.content</code></pre>
+      <p class="eyebrow">1.1 · Setup — pick a provider</p>
+      <h1 class="h">API key — pick one</h1>
+      <table class="moves">
+        <tr><td class="tool">Provider</td><td class="tool">Free?</td><td class="tool">Env var</td></tr>
+        <tr><td><strong>Gemini</strong> ✅</td><td>yes (free tier)</td><td><code class="inl">GOOGLE_API_KEY</code></td></tr>
+        <tr><td><strong>OpenAI</strong></td><td>paid</td><td><code class="inl">OPENAI_API_KEY</code></td></tr>
+      </table>
+      <pre class="code" data-lang="bash" style="margin-top:16px"><code class="py"># Gemini (free — recommended for the workshop)
+export GOOGLE_API_KEY=AIza…          # aistudio.google.com/apikey
+
+# OR OpenAI (paid)
+export OPENAI_API_KEY=sk-…           # platform.openai.com</code></pre>
     </section>
 
-    <!-- 6 · 1.3 -->
+    <!-- 8 · 1.2 Hello world -->
     <section class="slide">
-      <p class="eyebrow">1.3 · Free-text is for humans, structure is for code</p>
-      <h1 class="h">When code needs the result, ask for a shape</h1>
-      <p class="lead">A prose answer is great for a person. When the <em>next line of code</em> needs the result, ask the LLM to fill a shape — and validate it, exactly like M10 §3.</p>
-      <pre class="code"><code class="py">class TicketDigest(BaseModel):
-    open_count: int
-    top_priority: str
-    headline: str
+      <p class="eyebrow">1.2 · Hello world</p>
+      <h1 class="h">An agent in 4 lines</h1>
+      <pre class="code"><code class="py">from pydantic_ai import Agent
 
-digest = TicketDigest.model_validate_json(raw_json)   # untrusted output → typed</code></pre>
-      <p class="lead soft" style="margin-top:14px">Same boundary discipline as Day 2 — now on the LLM's synthesis of <em>your</em> data.</p>
+agent = Agent(
+    'google:gemini-2.5-flash',                  # or 'openai:gpt-4o-mini'
+    instructions='Be concise, reply with one sentence.',
+)
+
+result = agent.run_sync('Where does "hello world" come from?')
+print(result.output)
+# → "The first known use was in a 1974 C programming textbook."</code></pre>
+      <p class="lead soft" style="margin-top:14px"><code class="inl">Agent(model, instructions)</code> + <code class="inl">run_sync(prompt)</code>. That's the whole API. The model is a <strong>string</strong> — swap it, nothing else changes.</p>
     </section>
 
-    <!-- 7 · 1.4 -->
+    <!-- 9 · 1.3 TestModel -->
     <section class="slide">
-      <p class="eyebrow">1.4 · Two sources, one answer</p>
-      <h1 class="h">Synthesis across multiple data sources</h1>
-      <pre class="code"><code class="py">products = catalog.list_all()
-groups   = catalog.group_by_category()
-counts   = {cat: len(ps) for cat, ps in groups.items()}
+      <p class="eyebrow">1.3 · TestModel — no API key needed</p>
+      <h1 class="h">A fake LLM built into Pydantic AI</h1>
+      <pre class="code"><code class="py">from pydantic_ai import Agent
 
-answer = llm.chat.completions.create(model="gpt-4o-mini", messages=[
-    {"role": "system", "content": "You are a catalog analyst."},
-    {"role": "user",   "content": f"Compare inventory:\n{counts}\n\nProducts:\n{products}"}
-]).choices[0].message.content
-# → "Electronics leads with 3 products. Fitness has 1, currently out of stock."</code></pre>
-      <p class="lead soft" style="margin-top:14px">No merge logic, no string templates. The LLM handles the reasoning — your code supplies the data. This is what the agent's <strong>observe</strong> step does, every iteration.</p>
+agent = Agent('test', instructions='Be concise.')
+
+result = agent.run_sync('Hello!')
+print(result.output)
+# → "success (no tool calls)"</code></pre>
+      <p class="lead" style="margin-top:14px"><code class="inl">'test'</code> is a fake model — same idea as Day 3's mock <code class="inl">Session</code>. It runs every tool with default args and returns a canned response. Perfect for testing wiring without API credits.</p>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook: <b>module-11 §1</b> — hello world agent + TestModel</div></div>
     </section>
 
-    <!-- 8 · 1.5 -->
-    <section class="slide">
-      <p class="eyebrow">1.5 · This is the agent's observe step</p>
-      <h1 class="h">§1 is half of an agent</h1>
-      <pre class="map">
-<b>§1</b>        code output → LLM → answer                           (one shot)
-<b>agent</b>     [ LLM picks a tool → run it → feed result back ] → answer   (a loop)</pre>
-      <p class="lead" style="margin-top:22px">§1 is half of an agent: the LLM digesting a result. §2 adds the other half — the LLM choosing <em>which</em> of your functions to run. Same synthesis, now inside a loop.</p>
-      <div class="along"><span class="play">▶</span><div>Code-along now → notebook: <b>module-11 §1</b> — synthesize raw tickets free-text, then as a validated <code>TicketDigest</code></div></div>
-    </section>
-
-    <!-- 9 · Section 2 divider -->
+    <!-- 10 · Section 2 divider -->
     <section class="slide section">
       <span class="ghost">2</span>
       <div class="secrow">
@@ -325,114 +342,82 @@ answer = llm.chat.completions.create(model="gpt-4o-mini", messages=[
         <div class="secdiv"></div>
         <div class="secmeta">
           <p class="eyebrow">Section</p>
-          <h1>Tools and the agent loop</h1>
-          <div class="sub">LLM → code · <b>plan → act → observe</b></div>
+          <h1>Your First Tool</h1>
+          <div class="sub"><code class="inl">@agent.tool</code> · <b>schema from type hints</b> · <code class="inl">RunContext</code></div>
         </div>
       </div>
     </section>
 
-    <!-- 10 · 2.1 -->
+    <!-- 11 · 2.1 The third decorator moment -->
     <section class="slide">
-      <p class="eyebrow">2.1 · The big idea</p>
-      <h1 class="h">A "tool" is just a Python function the LLM can call</h1>
-      <p class="lead">No magic. You hand the LLM:</p>
-      <ul class="clean">
-        <li>A list of function <strong>signatures</strong> (as JSON schemas)</li>
-        <li>The user's question</li>
-      </ul>
-      <p class="lead">The LLM returns: <em>"Call <code class="inl">search_products</code> with <code class="inl">{"term": "keyboard"}</code>."</em></p>
-      <p class="lead soft">Your code: looks it up, calls it, sends the result back, lets the LLM decide what's next.</p>
-    </section>
-
-    <!-- 11 · 2.2 -->
-    <section class="slide">
-      <p class="eyebrow">2.2 · What the LLM actually sees</p>
-      <h1 class="h">Each tool arrives as a JSON schema</h1>
-      <pre class="code" data-lang="json"><code class="py">{
-  "type": "function",
-  "function": {
-    "name": "search_products",
-    "description": "Find products whose name contains the term.",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "term": { "type": "string", "description": "Search substring" }
-      },
-      "required": ["term"]
-    }
-  }
-}</code></pre>
-      <p class="lead soft" style="margin-top:14px">You write this dict <strong>by hand</strong> in the raw approach. Get the schema wrong → the LLM calls your tool wrong. §3 will eliminate it.</p>
-    </section>
-
-    <!-- 12 · 2.3 -->
-    <section class="slide">
-      <p class="eyebrow">2.3 · Under the hood — the raw loop</p>
-      <h1 class="h">The entire agent loop in ~15 lines</h1>
-      <pre class="code"><code class="py">def ask(prompt, tools, llm):
-    messages = [{"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user",   "content": prompt}]
-    for step in range(1, max_steps + 1):
-        resp = llm.chat.completions.create(
-            model="gpt-4o-mini", messages=messages,
-            tools=[t.openai_schema() for t in tools])
-        msg = resp.choices[0].message
-        if not msg.tool_calls:
-            return msg.content                    # final answer
-        messages.append(msg)                      # assistant msg with tool_calls
-        for call in msg.tool_calls:
-            result = run_tool(call)
-            messages.append({"role": "tool", "tool_call_id": call.id,
-                             "content": json.dumps(result)})
-    raise RuntimeError("did not converge")</code></pre>
-    </section>
-
-    <!-- 13 · 2.4 predict -->
-    <section class="slide">
-      <p class="eyebrow">2.4 · Predict</p>
-      <h1 class="h">🔮 What happens if you forget <code class="inl">tool_call_id</code>?</h1>
-      <p class="lead">The LLM asked you to call <code class="inl">search_products</code>. You ran it, got results, appended a <code class="inl">tool</code> message… but forgot to set <code class="inl">tool_call_id</code>.</p>
-      <div class="predict"><span class="q">🔮</span><div><b>Predict:</b> What do you think happens on the next API call?</div></div>
-    </section>
-
-    <!-- 14 · 2.5 -->
-    <section class="slide">
-      <p class="eyebrow">2.5 · The tool_call_id chain</p>
-      <h1 class="h">The #1 lab-breakage point</h1>
-      <p class="lead">When the LLM asks for a tool, you must append <strong>two things</strong>:</p>
-      <pre class="code"><code class="py">messages.append(msg)                           # 1. assistant
-messages.append({"role": "tool",
-                 "tool_call_id": call.id,      # must match
-                 "content": json.dumps(result)})  # 2. per call</code></pre>
-      <p class="lead soft" style="margin-top:14px">Miss the id → the next API call 400s. This is why frameworks exist.</p>
-    </section>
-
-    <!-- 15 · 2.6 -->
-    <section class="slide">
-      <p class="eyebrow">2.6 · The loop, visually</p>
-      <h1 class="h">Plan → Act → Observe → repeat</h1>
-      <div class="steps">
-        <div class="step"><span class="k">User prompt</span><div>enters the loop</div></div>
-        <div class="step"><span class="k">LLM(messages, tools)</span><div>decides next action</div></div>
-        <div class="step"><span class="k">tool_calls?</span><div><b>yes</b>: run tools, append observation, loop (up to <code class="inl">max_steps</code>) / <b>no</b>: return final answer</div></div>
-      </div>
-      <p class="lead"><strong>Plan</strong> (LLM picks a tool) → <strong>Act</strong> (your code runs it) → <strong>Observe</strong> (feed the result back) → repeat until done.</p>
-      <div class="along"><span class="play">▶</span><div>Code-along now → notebook: <b>module-11 §2 cells 1–3</b> — build the raw loop, watch tool_call_id chaining</div></div>
-    </section>
-
-    <!-- 16 · 2.7 -->
-    <section class="slide">
-      <p class="eyebrow">2.7 · When the loop goes wrong</p>
-      <h1 class="h">Three failure modes you'll hit</h1>
+      <p class="eyebrow">2.1 · The third decorator moment</p>
+      <h1 class="h">Same pattern every time: hand your function to a framework</h1>
       <table class="moves">
-        <tr><td>Tool <strong>never called</strong></td><td class="tool">description is vague → rewrite the docstring</td></tr>
-        <tr><td><strong>Infinite loop</strong></td><td class="tool">system prompt doesn't say when to stop → add max_steps cap</td></tr>
-        <tr><td><strong>Wrong tool</strong> called</td><td class="tool">overlapping descriptions → rename to be distinct</td></tr>
+        <tr><td>Day 1</td><td class="tool">@app.get("/products")</td><td>serves it as an HTTP route</td></tr>
+        <tr><td>Day 3</td><td class="tool">@pytest.fixture</td><td>injects it as test setup</td></tr>
+        <tr><td>Day 4</td><td class="tool">@agent.tool</td><td>exposes it as a tool the LLM can call</td></tr>
       </table>
-      <p class="lead soft" style="margin-top:18px">The LLM reads tool descriptions like a developer reads docs — if your docs are ambiguous, so are the calls. §3's framework doesn't fix bad descriptions; it fixes the <em>plumbing</em> around them.</p>
+      <p class="lead soft" style="margin-top:18px"><code class="inl">@</code> hands your function to a framework. The framework stamps metadata and does the plumbing.</p>
     </section>
 
-    <!-- 17 · Section 3 divider -->
+    <!-- 12 · 2.2 A simple tool -->
+    <section class="slide">
+      <p class="eyebrow">2.2 · A simple tool</p>
+      <h1 class="h"><code class="inl">@agent.tool_plain</code> — no dependencies needed</h1>
+      <pre class="code"><code class="py">from pydantic_ai import Agent
+
+agent = Agent('test', instructions='Use tools to answer questions.')
+
+@agent.tool_plain
+def get_temperature(city: str) -> str:
+    """Get the current temperature for a city."""
+    return f"The temperature in {city} is 28°C"
+
+result = agent.run_sync('What is the weather in Mumbai?')</code></pre>
+      <ul class="clean" style="margin-top:14px">
+        <li><code class="inl">city: str</code> → Pydantic AI auto-generates the JSON schema</li>
+        <li>The docstring → becomes the tool description the LLM reads</li>
+        <li><strong>Type hints + docstring = schema.</strong> No hand-written JSON dict.</li>
+      </ul>
+    </section>
+
+    <!-- 13 · 2.3 Schema comparison -->
+    <section class="slide">
+      <p class="eyebrow">2.3 · Schema: by hand vs. auto-derived</p>
+      <h1 class="h">You never touch the JSON dict</h1>
+      <table class="moves">
+        <tr><td class="tool">By hand (raw OpenAI API)</td><td class="tool">@agent.tool (Pydantic AI)</td></tr>
+        <tr><td>12-line JSON dict</td><td>1-line function signature</td></tr>
+        <tr><td><code class="inl">"description"</code> as a string literal</td><td>the docstring</td></tr>
+        <tr><td><code class="inl">"type": "string"</code></td><td><code class="inl">city: str</code></td></tr>
+        <tr><td>typo-prone, hard to refactor</td><td>stays in sync with the code</td></tr>
+      </table>
+      <p class="lead soft" style="margin-top:18px">The framework reads your Python and builds the schema. You write the function; it writes the JSON.</p>
+    </section>
+
+    <!-- 14 · 2.4 RunContext -->
+    <section class="slide">
+      <p class="eyebrow">2.4 · RunContext — tools that need shared data</p>
+      <h1 class="h">The same DI pattern from Day 3</h1>
+      <pre class="code"><code class="py">from pydantic_ai import Agent, RunContext
+
+agent = Agent('test', deps_type=list)
+
+@agent.tool
+def count_items(ctx: RunContext[list]) -> int:
+    """Count how many items are in the list."""
+    return len(ctx.deps)
+
+result = agent.run_sync('How many items?', deps=['a', 'b', 'c'])</code></pre>
+      <table class="moves" style="margin-top:14px">
+        <tr><td class="tool">Day 3</td><td class="tool">Day 4</td></tr>
+        <tr><td><code class="inl">APIClient(session=mock_session)</code></td><td><code class="inl">agent.run_sync(prompt, deps=catalog)</code></td></tr>
+        <tr><td>inject a fake <code class="inl">Session</code></td><td>inject a test <code class="inl">ProductCatalog</code></td></tr>
+      </table>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook: <b>module-11 §2</b> — tool_plain + RunContext</div></div>
+    </section>
+
+    <!-- 15 · Section 3 divider -->
     <section class="slide section">
       <span class="ghost">3</span>
       <div class="secrow">
@@ -440,123 +425,74 @@ messages.append({"role": "tool",
         <div class="secdiv"></div>
         <div class="secmeta">
           <p class="eyebrow">Section</p>
-          <h1>Pydantic AI — the framework does the loop</h1>
-          <div class="sub"><code class="inl">@agent.tool</code> · <code class="inl">RunContext</code> · <code class="inl">run_sync</code></div>
+          <h1>Building the Catalog Agent</h1>
+          <div class="sub">multiple tools · <code class="inl">RunContext[ProductCatalog]</code> · <code class="inl">run_sync</code></div>
         </div>
       </div>
     </section>
 
-    <!-- 18 · 3.1 -->
+    <!-- 16 · 3.1 Define agent + tools -->
     <section class="slide">
-      <p class="eyebrow">3.1 · @agent.tool is the third decorator moment</p>
-      <h1 class="h">Same pattern every time: hand your function to a framework</h1>
-      <table class="moves">
-        <tr><td>Day 1</td><td class="tool">@app.get("/products")</td><td>serves it as an HTTP route</td></tr>
-        <tr><td>Day 3</td><td class="tool">@pytest.fixture</td><td>injects it as test setup</td></tr>
-        <tr><td>Day 4</td><td class="tool">@agent.tool</td><td>exposes it as a tool the LLM can call</td></tr>
-      </table>
-      <p class="lead soft" style="margin-top:18px">The framework stamps metadata and does the plumbing.</p>
-    </section>
-
-    <!-- 19 · 3.2 -->
-    <section class="slide">
-      <p class="eyebrow">3.2 · Define the agent + tools</p>
-      <h1 class="h">Schema auto-derived from type hints + docstring</h1>
+      <p class="eyebrow">3.1 · Define the agent + tools</p>
+      <h1 class="h">Each tool: access the catalog via <code class="inl">ctx.deps</code></h1>
       <pre class="code"><code class="py">from pydantic_ai import Agent, RunContext
+from catalog.models import ProductCatalog
 
 catalog_agent = Agent(
     deps_type=ProductCatalog,
-    instructions=SYSTEM_PROMPT,
+    instructions="You are a catalog assistant. Use tools to answer questions.",
 )
+
+@catalog_agent.tool
+def list_products(ctx: RunContext[ProductCatalog]) -> list[dict]:
+    """Return every product in the catalog."""
+    return [p.model_dump() for p in ctx.deps.list_all()]
 
 @catalog_agent.tool
 def search_products(ctx: RunContext[ProductCatalog], term: str) -> list[dict]:
     """Find products whose name contains the given substring."""
     return [p.model_dump() for p in ctx.deps.search_by_name(term)]</code></pre>
-      <p class="lead soft" style="margin-top:14px">No hand-written JSON dict.</p>
     </section>
 
-    <!-- 20 · 3.3 -->
+    <!-- 17 · 3.2 Run it + swap model -->
     <section class="slide">
-      <p class="eyebrow">3.3 · Schema: hand-written vs auto-derived</p>
-      <h1 class="h">The same tool — two ways to declare it</h1>
-      <table class="moves">
-        <tr><td class="tool">By hand (§2)</td><td class="tool">@agent.tool (§3)</td></tr>
-        <tr><td>12-line JSON dict</td><td>3-line function signature</td></tr>
-        <tr><td><code class="inl">"description"</code> as a string literal</td><td>the docstring</td></tr>
-        <tr><td><code class="inl">"type": "string"</code></td><td><code class="inl">term: str</code></td></tr>
-        <tr><td>easy to typo, hard to refactor</td><td>stays in sync with the code</td></tr>
-      </table>
-      <pre class="code" style="margin-top:14px"><code class="py">@catalog_agent.tool
-def search_products(ctx: RunContext[ProductCatalog], term: str) -> list[dict]:
-    """Find products whose name contains the given substring."""</code></pre>
-    </section>
-
-    <!-- 21 · 3.4 -->
-    <section class="slide">
-      <p class="eyebrow">3.4 · RunContext — the injection seam returns</p>
-      <h1 class="h">The same dependency-injection pattern from Day 3</h1>
-      <pre class="code"><code class="py">@catalog_agent.tool
-def list_products(ctx: RunContext[ProductCatalog]) -> list[dict]:
-    """Return every product in the catalog."""
-    return [p.model_dump() for p in ctx.deps.list_all()]</code></pre>
-      <table class="moves" style="margin-top:18px">
-        <tr><td class="tool">Day 3</td><td class="tool">Day 4</td></tr>
-        <tr><td><code class="inl">APIClient(session=mock_session)</code></td><td><code class="inl">agent.run_sync(prompt, deps=catalog)</code></td></tr>
-        <tr><td>inject a fake <code class="inl">requests.Session</code></td><td>inject a test <code class="inl">ProductCatalog</code></td></tr>
-        <tr><td>test the client without the network</td><td>test the agent without the LLM</td></tr>
-      </table>
-    </section>
-
-    <!-- 22 · 3.5 -->
-    <section class="slide">
-      <p class="eyebrow">3.5 · Run the agent — and swap the brain</p>
+      <p class="eyebrow">3.2 · Run it — and swap the brain</p>
       <h1 class="h">The model is a parameter, not an architecture decision</h1>
       <pre class="code"><code class="py">result = catalog_agent.run_sync(
     "What's our most expensive product?",
     deps=ProductCatalog(seed_products()),
-    model="openai:gpt-4o-mini",            # ← change this string, everything else stays
+    model="google:gemini-2.5-flash",        # or "openai:gpt-4o-mini"
 )
 print(result.output)
 # → "The most expensive product is the Mechanical Keyboard, at ₹5,499."</code></pre>
-      <p class="lead" style="margin-top:16px">No loop, no <code class="inl">tool_call_id</code> chaining, no <code class="inl">max_steps</code>. <strong>Your code is the tools.</strong> Swap to <code class="inl">"anthropic:claude-haiku-4-5"</code> or <code class="inl">"ollama:llama3.2"</code> and nothing else changes.</p>
+      <p class="lead" style="margin-top:16px">No loop code, no JSON schema dicts, no message chaining. <strong>Your code is the tools.</strong></p>
+      <pre class="code" data-lang="bash" style="margin-top:8px"><code class="py"># Gemini (free)                              # OpenAI (paid)
+model="google:gemini-2.5-flash"              model="openai:gpt-4o-mini"</code></pre>
     </section>
 
-    <!-- 23 · 3.6 -->
+    <!-- 18 · 3.3 Common pitfalls -->
     <section class="slide">
-      <p class="eyebrow">3.6 · When Pydantic AI goes wrong</p>
-      <h1 class="h">Understanding §2 is how you debug §3</h1>
-      <p class="lead">The framework hides the loop — so when it breaks, the errors come from <em>inside</em> the framework.</p>
+      <p class="eyebrow">3.3 · Common pitfalls</p>
+      <h1 class="h">Bad docs → bad calls</h1>
       <table class="moves">
-        <tr><td class="tool">ModelRetry on every call</td><td>tool raises unhandled exception → add try/except, return error <em>string</em></td></tr>
-        <tr><td class="tool">UnexpectedModelBehavior</td><td>malformed tool call JSON → check the model string (smaller models hallucinate schemas)</td></tr>
-        <tr><td class="tool">Agent "answers" without tools</td><td>system prompt doesn't say to use tools → add "Always use tools — never guess" to <code class="inl">instructions</code></td></tr>
+        <tr><td>Tool <strong>never called</strong></td><td class="tool">docstring is vague → rewrite: say what and when</td></tr>
+        <tr><td>Agent "answers" <strong>without tools</strong></td><td class="tool">instructions don't mention tools → add "Always use tools — never guess"</td></tr>
+        <tr><td>Tool <strong>returns error</strong></td><td class="tool">returning Pydantic objects → use .model_dump()</td></tr>
+        <tr><td>Missing <code class="inl">ctx</code> parameter</td><td class="tool">forgot RunContext as first arg → add ctx: RunContext[T]</td></tr>
       </table>
+      <p class="lead soft" style="margin-top:18px">The LLM reads tool descriptions like a developer reads docs. If your docs are ambiguous, the calls will be too.</p>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook: <b>module-11 §3</b> — catalog agent with TestModel + optional live run</div></div>
     </section>
 
-    <!-- 24 · 3.7 -->
-    <section class="slide">
-      <p class="eyebrow">3.7 · By hand vs. framework — why we showed both</p>
-      <h1 class="h">The framework saves typing, not understanding</h1>
-      <table class="moves">
-        <tr><td class="tool">By hand (§2)</td><td class="tool">Pydantic AI (§3)</td></tr>
-        <tr><td>Hand-written JSON schema dicts</td><td>Schema auto-derived from type hints</td></tr>
-        <tr><td>Manual <code class="inl">ask()</code> loop + <code class="inl">tool_call_id</code> chaining</td><td><code class="inl">agent.run_sync(...)</code> — hidden</td></tr>
-        <tr><td><code class="inl">max_steps</code> → <code class="inl">raise RuntimeError</code></td><td>built-in turn limit</td></tr>
-        <tr><td>~80 lines</td><td>~30 lines</td></tr>
-      </table>
-      <p class="lead soft" style="margin-top:16px">When a real agent breaks — a <code class="inl">tool_call_id</code> 400, a runaway loop — whoever hand-rolled it debugs in minutes.</p>
-      <div class="along"><span class="play">▶</span><div>Code-along now → notebook: <b>module-11 §3</b> — the same agent in Pydantic AI, then swap the model string</div></div>
-    </section>
-
-    <!-- 25 · LAB -->
+    <!-- 19 · LAB -->
     <section class="slide lab">
-      <span class="labtag">🧪 LAB 11 · 80 MIN</span>
-      <h1>Synthesize, then build the <code class="inl" style="font-size:.85em">CatalogAgent</code></h1>
+      <span class="labtag">🧪 LAB 11 · 40 MIN</span>
+      <h1>Build the <code class="inl" style="font-size:.85em">CatalogAgent</code></h1>
       <p class="lead">Open <code class="inl">modules/m11-tools-agent-loop/lab/README.md</code></p>
-      <p class="lead"><strong>Part A (~20 min):</strong> the LLM processes your <code class="inl">ProductCatalog</code> output — raw products in → a plain-English answer, then a validated <code class="inl">CatalogSummary</code>.</p>
-      <p class="lead"><strong>Part B (the core):</strong> build the <code class="inl">CatalogAgent</code> with Pydantic AI — <code class="inl">Agent(...)</code>, four <code class="inl">@agent.tool</code> functions, <code class="inl">agent.run_sync()</code>. The <code class="inl">RunContext[ProductCatalog]</code> injection is the Day-3 seam — no server needed.</p>
-      <div class="endstate"><b>Stretch:</b> swap <code>model="openai:gpt-4o-mini"</code> to <code>model="anthropic:claude-haiku-4-5"</code> in <code>run_sync</code> — one line, same tools.</div>
+      <p class="lead">Build the <code class="inl">CatalogAgent</code> with Pydantic AI — <code class="inl">Agent(...)</code>, four <code class="inl">@agent.tool</code> functions, <code class="inl">agent.run_sync()</code>.</p>
+      <p class="lead">The <code class="inl">RunContext[ProductCatalog]</code> injection is the Day-3 seam — no server needed.</p>
+      <p class="lead">Four tools: <code class="inl">list_products</code>, <code class="inl">search_products</code>, <code class="inl">count_by_category</code>, <code class="inl">update_price</code>.</p>
+      <div class="endstate"><b>Stretch:</b> swap <code>model="google:gemini-2.5-flash"</code> to <code>model="openai:gpt-4o-mini"</code> — one line, same tools.</div>
     </section>
 
   </div>
@@ -564,7 +500,7 @@ print(result.output)
 
 <div class="nav">
   <button id="prev" aria-label="Previous slide">◀</button>
-  <span class="count" id="count">1 / 25</span>
+  <span class="count" id="count">1 / 19</span>
   <button id="next" aria-label="Next slide">▶</button>
 </div>
 <div class="hint">← → to navigate</div>
@@ -580,7 +516,7 @@ print(result.output)
   slides.forEach((s, k)=>{
     const p = document.createElement('div'); p.className='prog';
     const f = document.createElement('div'); f.className='foot';
-    f.innerHTML = '<span class="brand"><span class="dot"></span>Acuity · Day 4 · Module 11 — Building LLM Applications</span>'
+    f.innerHTML = '<span class="brand"><span class="dot"></span>Acuity · Day 4 · Module 11 — Building AI Agents with Pydantic AI</span>'
                 + '<span>'+String(k+1).padStart(2,'0')+' / '+String(N).padStart(2,'0')+'</span>';
     s.appendChild(p); s.appendChild(f);
     p.style.width = ((k+1)/N*100)+'%';
@@ -616,12 +552,12 @@ print(result.output)
 
   const KW = new Set(['def','return','if','elif','else','for','while','in','not','and','or',
     'import','from','as','try','except','finally','raise','with','class','lambda','pass',
-    'break','continue','is','yield','global','nonlocal','assert','del','await','async']);
+    'break','continue','is','yield','global','nonlocal','assert','del','await','async','export']);
   const CON = new Set(['True','False','None']);
   const BI = new Set(['print','type','len','sum','range','enumerate','isinstance','open','list',
     'dict','set','tuple','int','float','str','bool','round','dir','sorted','map','filter','zip',
     'LookupError','ValueError','KeyError','TypeError',
-    'BaseModel','Field','Agent','RunContext','ProductCatalog','pipeline']);
+    'BaseModel','Field','Agent','RunContext','ProductCatalog','TestModel']);
   const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const TOK = /(#.*$)|((?:[fFrRbB]{0,2})(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'))|(\b\d+\.?\d*\b)|([A-Za-z_]\w*)/gm;
 

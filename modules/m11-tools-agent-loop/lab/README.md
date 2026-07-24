@@ -1,49 +1,56 @@
-# Lab 11 — Synthesize, then build the `CatalogAgent`
+# Lab 11 — Build the `CatalogAgent`
 
-**~80 min · Day 4 · Module 11** — both directions of the code↔LLM seam: first let the LLM **process** your catalog data (Part A), then let it **drive** your code as tools (Part B).
+**~40 min · Day 4 · Module 11** — wrap your `ProductCatalog` methods as LLM-callable tools using Pydantic AI.
 
-**Part A (~20 min):** raw products in → a plain-English answer, then a validated `CatalogSummary`. Standalone — no agent, no loop.
-**Part B (the core):** wrap your `ProductCatalog` methods as LLM-callable **tools** using Pydantic AI. `RunContext[ProductCatalog]` is the injection seam; Lab 12 swaps in a test catalog.
-
-## Part A — the LLM processes your catalog (code → LLM)
-
-Before the agent *calls* your code, see the LLM *digest* its output. Your `ProductCatalog` returns raw product data; instead of writing aggregation/formatting code, hand it to the LLM.
-
-```bash
-cp ../labs/lab-11-catalog-agent/starter/summarize_catalog.py .   # from my-catalog/
-```
-
-1. Fill `summarize_free_text()` — embed `json.dumps(products)` in a user message, return `response.choices[0].message.content`. No code parses the products.
-2. Fill `summarize_structured()` — same call with `response_format={"type":"json_object"}`, then `CatalogSummary.model_validate_json(raw)`. Validate the LLM's output, exactly like M10 §3.
-3. Run `uv run python summarize_catalog.py` → a prose summary, then a typed `CatalogSummary`. No server needed — the script uses `ProductCatalog` directly.
-
-**Why this matters:** this *is* the agent's `observe` step — the LLM turning a tool result into an answer. Part B wraps it in a loop where the LLM also picks *which* tool to run.
-
-## Part B — build the `CatalogAgent` with Pydantic AI (LLM → code)
-
-### Prereqs
+## Prereqs
 
 ```bash
 uv add pydantic-ai
-export OPENAI_API_KEY=sk-…       # your key
 ```
 
-### Goal
+Set **one** API key (pick whichever you have):
 
-An LLM that **calls your `ProductCatalog` methods as tools**: it proposes a call, your code runs it, feeds the result back, and the LLM calls again or answers. By the end, `catalog_agent.run_sync("what's our most expensive product?", deps=ProductCatalog(seed_products()), model="openai:gpt-4o-mini")` makes the model call `list_products`, reason over the data, and answer in plain language.
+```bash
+# Gemini (free — recommended)
+# Get your key at: https://aistudio.google.com/apikey
+export GOOGLE_API_KEY=AIza…
 
-### You start with → you'll end with
+# OR OpenAI (paid)
+# Get your key at: https://platform.openai.com
+export OPENAI_API_KEY=sk-…
+```
+
+## Goal
+
+An LLM that **calls your `ProductCatalog` methods as tools**: it reads the user's question, calls the right tool, reads the result, and answers in plain language.
+
+By the end, this works:
+
+```python
+from catalog.agent import catalog_agent
+from catalog.models import ProductCatalog
+from catalog.storage import seed_products
+
+result = catalog_agent.run_sync(
+    "What's our most expensive product?",
+    deps=ProductCatalog(seed_products()),
+    model="google:gemini-2.5-flash",   # or "openai:gpt-4o-mini"
+)
+print(result.output)
+```
+
+## You start with → you'll end with
 
 | Start | End |
 |---|---|
-| Lab 10 done (`CatalogQuery` + `parse_nl_query`) | Part A: `summarize_catalog.py` runs; Part B: `catalog_agent` with 4 tools |
-| `starter/catalog/agent.py` — agent + plumbing **given**, tool bodies are `# TODO` | Tools: `list_products`, `search_products`, `count_by_category`, `update_price` |
+| `starter/catalog/agent.py` — agent + plumbing **given**, tool bodies are `# TODO` | Four working tools: `list_products`, `search_products`, `count_by_category`, `update_price` |
+| Lab 10 done (`CatalogQuery` + `parse_nl_query`) | A fully functional catalog agent |
 
 ```bash
 cp ../labs/lab-11-catalog-agent/starter/catalog/agent.py catalog/   # from my-catalog/
 ```
 
-### Steps
+## Steps
 
 1. **Read the plumbing** — `catalog_agent = Agent(...)` is given. `@catalog_agent.tool` registers each function. `RunContext[ProductCatalog]` gives you `ctx.deps` — the injected catalog.
 
@@ -52,7 +59,11 @@ cp ../labs/lab-11-catalog-agent/starter/catalog/agent.py catalog/   # from my-ca
    - Call the right `ProductCatalog` method (open `models.py` to see them)
    - Return **JSON-friendly** values — tools can't return Pydantic objects; convert them first
 
-   The four tools: `list_products` (no extra params), `search_products(term)`, `count_by_category` (no extra params), `update_price(product_id, new_price)`. The starter hints tell you which `ProductCatalog` method maps to each.
+   The four tools:
+   - `list_products` — no extra params, returns all products
+   - `search_products(term)` — search by name substring
+   - `count_by_category` — no extra params, returns `{category: count}`
+   - `update_price(product_id, new_price)` — update a product's price
 
 3. **Demo it** (no server needed — just run):
    ```python
@@ -60,14 +71,14 @@ cp ../labs/lab-11-catalog-agent/starter/catalog/agent.py catalog/   # from my-ca
    from catalog.models import ProductCatalog
    from catalog.storage import seed_products
    result = catalog_agent.run_sync(
-       "what's our most expensive product?",
+       "What's our most expensive product?",
        deps=ProductCatalog(seed_products()),
-       model="openai:gpt-4o-mini",
+       model="google:gemini-2.5-flash",   # or "openai:gpt-4o-mini"
    )
    print(result.output)
    ```
 
-### Expected output
+## Expected output
 
 ```
 The most expensive product is the Mechanical Keyboard, at ₹5,499.
@@ -75,14 +86,14 @@ The most expensive product is the Mechanical Keyboard, at ₹5,499.
 
 The model called `list_products` once, read the data, then answered.
 
-### Pitfalls
+## Pitfalls
 
-- Returning a Pydantic `Product` from a tool — tool return values must be JSON-serializable. `model_dump()` your Products!
-- Forgetting `ctx: RunContext[ProductCatalog]` as the first parameter — without it, the tool can't access `ctx.deps`.
-- Missing the docstring on a tool function — the LLM picks tools by reading descriptions. No docstring = the LLM won't know what the tool does.
-- Re-creating the catalog every call — pass it once via `deps=`.
+- **Returning Pydantic objects from a tool** — tool return values must be JSON-serializable. Use `.model_dump()` on your Products.
+- **Forgetting `ctx: RunContext[ProductCatalog]`** as the first parameter — without it, the tool can't access `ctx.deps`.
+- **Missing the docstring** — the LLM picks tools by reading descriptions. No docstring = the LLM won't know what the tool does.
+- **Re-creating the catalog every call** — pass it once via `deps=`.
 
-### Stretch
+## Stretch
 
-- **Swap the model:** change `model="openai:gpt-4o-mini"` to `model="anthropic:claude-haiku-4-5"` in the `run_sync` call (install `uv add pydantic-ai[anthropic]`, set `ANTHROPIC_API_KEY`). One line changes — the tools stay identical.
-- Add a `delete_product` tool + a **confirmation step**: the LLM proposes, your code asks y/n, executes only on yes.
+- **Swap the model:** if you used Gemini, try `model="openai:gpt-4o-mini"` (set `OPENAI_API_KEY`), or vice versa. One line changes — the tools stay identical.
+- **Add a `delete_product` tool** + a confirmation step: the LLM proposes, your code asks y/n, executes only on yes.
