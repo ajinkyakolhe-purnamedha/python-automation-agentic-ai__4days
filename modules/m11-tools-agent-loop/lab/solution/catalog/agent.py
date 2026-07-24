@@ -4,16 +4,19 @@ The reference answer for ``starter/catalog/agent.py``: the four
 ``@catalog_agent.tool`` function bodies are filled in.
 
 Built with **Pydantic AI** — schema auto-derived from type hints +
-docstrings, no hand-written JSON dicts. ``RunContext[APIClient]``
-injects the Day-2 API client (the Day-3 mock seam).
+docstrings, no hand-written JSON dicts. ``RunContext[ProductCatalog]``
+injects the catalog (the mock seam).
 
 Usage::
 
     from catalog.agent import catalog_agent
-    from catalog.client import APIClient
+    from catalog.models import ProductCatalog
+    from catalog.storage import seed_products
 
     result = catalog_agent.run_sync(
-        "What's our most expensive product?", deps=APIClient()
+        "What's our most expensive product?",
+        deps=ProductCatalog(seed_products()),
+        model="openai:gpt-4o-mini",
     )
     print(result.output)
 """
@@ -26,7 +29,7 @@ from typing import Optional
 from pydantic import BaseModel, Field, ValidationError
 from pydantic_ai import Agent, RunContext
 
-from .client import APIClient
+from .models import ProductCatalog, ProductUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -69,35 +72,38 @@ SYSTEM_PROMPT = (
 )
 
 catalog_agent = Agent(
-    deps_type=APIClient,
+    deps_type=ProductCatalog,
     instructions=SYSTEM_PROMPT,
 )
 
 
 @catalog_agent.tool
-def list_products(ctx: RunContext[APIClient]) -> list[dict]:
+def list_products(ctx: RunContext[ProductCatalog]) -> list[dict]:
     """Return every product in the catalog."""
-    return [p.model_dump() for p in ctx.deps.list_products()]
+    return [p.model_dump() for p in ctx.deps.list_all()]
 
 
 @catalog_agent.tool
-def search_products(ctx: RunContext[APIClient], term: str) -> list[dict]:
+def search_products(ctx: RunContext[ProductCatalog], term: str) -> list[dict]:
     """Find products whose name contains the given substring (case-insensitive)."""
-    return [p.model_dump() for p in ctx.deps.list_products()
-            if term.lower() in p.name.lower()]
+    return [p.model_dump() for p in ctx.deps.search_by_name(term)]
 
 
 @catalog_agent.tool
-def count_by_category(ctx: RunContext[APIClient]) -> dict[str, int]:
+def count_by_category(ctx: RunContext[ProductCatalog]) -> dict[str, int]:
     """Return a dict mapping each category to its product count."""
-    return ctx.deps.count_by_category()
+    groups = ctx.deps.group_by_category()
+    return {cat: len(products) for cat, products in groups.items()}
 
 
 @catalog_agent.tool
-def update_price(ctx: RunContext[APIClient], product_id: int, new_price: float) -> dict:
+def update_price(ctx: RunContext[ProductCatalog], product_id: int, new_price: float) -> dict:
     """Set a product's price. Returns the updated product."""
-    from .models import ProductUpdate
-    return ctx.deps.update_product(product_id, ProductUpdate(price=new_price)).model_dump()
+    from .models import CatalogError
+    try:
+        return ctx.deps.update(product_id, ProductUpdate(price=new_price)).model_dump()
+    except CatalogError as e:
+        return {"error": str(e)}
 
 
 # ============================================================
@@ -133,9 +139,9 @@ def parse_nl_query(prompt: str, llm_client=None,
         raise
 
 
-def apply_query(query: CatalogQuery, api: APIClient) -> list[dict]:
-    """Translate a CatalogQuery into APIClient calls (Lab 10)."""
-    items = api.list_products()
+def apply_query(query: CatalogQuery, catalog: ProductCatalog) -> list[dict]:
+    """Translate a CatalogQuery into catalog queries (Lab 10)."""
+    items = catalog.list_all()
     if query.category:
         items = [p for p in items if p.category.lower() == query.category.lower()]
     if query.max_price is not None:

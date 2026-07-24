@@ -1,15 +1,15 @@
 """Lab 11 · Part A — let the LLM process your code's output (standalone).
 
-Direction: code → LLM. Your APIClient produces raw product data; instead of
-writing formatting/aggregation code, hand it to the LLM and let it synthesize
-the answer — first as free text, then as a *validated* CatalogSummary.
+Direction: code → LLM. Your ProductCatalog produces raw product data; instead
+of writing formatting/aggregation code, hand it to the LLM and let it
+synthesize the answer — first as free text, then as a *validated*
+CatalogSummary.
 
 This is the agent's "observe" step on its own. Part B wraps it in a loop.
 
-Run (needs the API server up + an OpenAI key):
+Run (needs an OpenAI key — no server needed):
     pip install openai
     export OPENAI_API_KEY=sk-...
-    uvicorn catalog.server:app --reload     # in another terminal
     python summarize_catalog.py
 
 Fill every `# TODO`.
@@ -40,27 +40,29 @@ class CatalogSummary(BaseModel):
 def summarize_free_text(products: list[dict], llm_client: Optional[Any] = None,
                         *, model: str = "gpt-4o-mini") -> str:
     """1a · Raw product dicts in → a plain-English answer. No aggregation code."""
-    # TODO: client = llm_client or default_openai_client()
-    # TODO: call client.chat.completions.create(model=model, messages=[...]) with a
-    #       user message that embeds json.dumps(products) and asks for a 2-sentence summary.
-    # TODO: return response.choices[0].message.content
+    # TODO: Send the product data to the LLM and return its plain-text summary.
+    #   Hint 1: use llm_client (or default_openai_client() if None), call
+    #           chat.completions.create — embed json.dumps(products) in a user message
+    #           asking for a 2-sentence summary
+    #   Hint 2: the response object has .choices[0].message.content — that's your return
     raise NotImplementedError
 
 
 def summarize_structured(products: list[dict], llm_client: Optional[Any] = None,
                          *, model: str = "gpt-4o-mini") -> CatalogSummary:
     """1b · Same input → a *validated* CatalogSummary (JSON mode + Pydantic)."""
-    # TODO: client = llm_client or default_openai_client()
-    # TODO: call create(...) with response_format={"type": "json_object"} asking for
-    #       a CatalogSummary as JSON, embedding json.dumps(products).
-    # TODO: raw = response.choices[0].message.content or "{}"
-    # TODO: return CatalogSummary.model_validate_json(raw)   # validate the LLM's output
+    # TODO: Same as free_text, but force JSON output and validate through Pydantic.
+    #   Hint 1: add response_format={"type": "json_object"} to the create() call —
+    #           search "openai json mode" — and ask the LLM to return CatalogSummary fields
+    #   Hint 2: the LLM returns a raw JSON string; pass it to
+    #           CatalogSummary.model_validate_json() to get a typed, validated object
     raise NotImplementedError
 
 
 def main() -> None:
-    from catalog.client import APIClient
-    products = [p.model_dump() for p in APIClient().list_products()]
+    from catalog.models import ProductCatalog
+    from catalog.storage import seed_products
+    products = [p.model_dump() for p in ProductCatalog(seed_products()).list_all()]
     print(summarize_free_text(products))
     print(summarize_structured(products))
 

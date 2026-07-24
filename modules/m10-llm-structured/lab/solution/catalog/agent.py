@@ -1,40 +1,25 @@
 """LLM-powered Catalog Agent (Day 4) — Lab 10 SOLUTION (answer key).
 
 The single-shot piece: take a natural-language question, make the LLM return a
-**structured** `CatalogQuery` (not English you re-parse), validate it through
-Pydantic, then run it as a pure-Python filter over the Day-2 `APIClient`.
+**structured** ``CatalogQuery`` (not English you re-parse), validate it through
+Pydantic, then run it as a pure-Python filter over ``ProductCatalog``.
 One LLM call. No agent loop, no tools — that's Lab 11.
 
-This is the reference answer for `starter/catalog/agent.py`: the two function
-bodies (`parse_nl_query`, `apply_query`) are filled in; everything else matches
-the starter. Uses the OpenAI API (set OPENAI_API_KEY).
+This is the reference answer for ``starter/catalog/agent.py``: the two function
+bodies (``parse_nl_query``, ``apply_query``) are filled in; everything else
+matches the starter. Uses the OpenAI API (set OPENAI_API_KEY).
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, Protocol
+from typing import Optional
 
 from pydantic import BaseModel, Field, ValidationError
 
-from .client import APIClient
+from .models import ProductCatalog
 
 logger = logging.getLogger(__name__)
-
-
-# ============================================================
-# LLM client protocol (so tests can pass any duck-typed mock)
-# ============================================================
-
-class LLMClient(Protocol):
-    """Minimal slice of the OpenAI client interface this lab needs."""
-    chat: Any
-
-
-def default_openai_client() -> LLMClient:
-    """Construct a real OpenAI client. Requires OPENAI_API_KEY in env."""
-    from openai import OpenAI  # local import — only needed when we run real
-    return OpenAI()
 
 
 # ============================================================
@@ -44,9 +29,9 @@ def default_openai_client() -> LLMClient:
 class CatalogQuery(BaseModel):
     """Pydantic schema the LLM must return for NL → query parsing (Lab 10).
 
-    The `description=` on each field is what the LLM reads to decide how to fill
-    the slot — it doubles as the instruction AND the validation target. Each one
-    states the valid values and what `null` means.
+    The ``description=`` on each field is what the LLM reads to decide how to
+    fill the slot — it doubles as the instruction AND the validation target.
+    Each one states the valid values and what ``null`` means.
     """
 
     category: Optional[str] = Field(
@@ -78,32 +63,34 @@ NL_QUERY_SYSTEM = (
 )
 
 
-def parse_nl_query(prompt: str, llm_client: Optional[LLMClient] = None,
+def parse_nl_query(prompt: str, llm_client=None,
                    *, model: str = "gpt-4o-mini") -> CatalogQuery:
     """Convert a free-form question into a validated CatalogQuery (one LLM call)."""
-    client = llm_client or default_openai_client()
-    response = client.chat.completions.create(
+    if llm_client is None:
+        from openai import OpenAI
+        llm_client = OpenAI()
+    response = llm_client.chat.completions.create(
         model=model,
         messages=[
             {"role": "system", "content": NL_QUERY_SYSTEM},
             {"role": "user", "content": prompt},
         ],
-        response_format={"type": "json_object"},   # force parseable JSON
+        response_format={"type": "json_object"},
     )
     raw = response.choices[0].message.content or "{}"
     try:
-        return CatalogQuery.model_validate_json(raw)   # validate at the boundary
+        return CatalogQuery.model_validate_json(raw)
     except ValidationError:
         logger.warning("LLM returned invalid CatalogQuery: %s", raw)
         raise
 
 
-def apply_query(query: CatalogQuery, api: APIClient) -> list[dict]:
-    """Translate a CatalogQuery into APIClient calls — pure Python, no LLM."""
-    items = api.list_products()
+def apply_query(query: CatalogQuery, catalog: ProductCatalog) -> list[dict]:
+    """Translate a CatalogQuery into catalog queries — pure Python, no LLM."""
+    items = catalog.list_all()
     if query.category:
         items = [p for p in items if p.category.lower() == query.category.lower()]
-    if query.max_price is not None:                # guard None — 0 is a valid bound
+    if query.max_price is not None:
         items = [p for p in items if p.price <= query.max_price]
     if query.in_stock_only:
         items = [p for p in items if p.in_stock]

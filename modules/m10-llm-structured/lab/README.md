@@ -50,8 +50,8 @@ cp ../labs/lab-10-nl-query-filter/starter/catalog/agent.py catalog/   # from my-
 ## Steps
 
 1. **Sharpen the schema.** The four `CatalogQuery` fields are given — tighten each `Field(description=…)` (the LLM reads it). Say what valid values and `null` mean. Don't rename or retype fields.
-2. **`parse_nl_query` — force JSON, then validate.** One call with `response_format={"type":"json_object"}`, then `CatalogQuery.model_validate_json(raw)`. Never trust raw JSON.
-3. **`apply_query` — pure Python, no LLM.** Start from `catalog.list_all()`, narrow by each field that is *set* (skip nulls), `return [p.model_dump() for p in items]`. Guard `max_price is not None` — `0` is a valid bound.
+2. **`parse_nl_query` — force JSON, then validate.** One LLM call with JSON mode enabled (search "openai json mode"), then validate the raw JSON through Pydantic. Never trust raw model output — the schema is the contract.
+3. **`apply_query` — pure Python, no LLM.** Start from all products, narrow by each query field that is *set* (skip nulls), return dicts not Pydantic objects. Be careful with `max_price`: `0` is a valid bound, so test with `is not None`, not truthiness.
 4. **Drive it from a REPL** (no server needed — just import `ProductCatalog`).
 5. **Prove the schema protects you.** Ask nonsense (*"products that taste like pizza"*) → expect an empty/null `CatalogQuery` or a clean `ValidationError`. Silently lying is the only wrong answer.
 

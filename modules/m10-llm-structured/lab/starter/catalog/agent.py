@@ -3,7 +3,7 @@
 Lab 10 builds ONLY the single-shot piece: take a natural-language question,
 make the LLM return a **structured** `CatalogQuery` (not English you have to
 re-parse), validate it through Pydantic, then run it as a pure-Python filter
-over the Day-2 `APIClient`. One LLM call. No agent loop, no tools — that's
+over the `ProductCatalog`. One LLM call. No agent loop, no tools — that's
 Lab 11.
 
 Fill every `raise NotImplementedError` below. Keep the field declarations as
@@ -14,28 +14,13 @@ how to fill each slot — that *is* the teaching point.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, Protocol
+from typing import Optional
 
 from pydantic import BaseModel, Field, ValidationError
 
-from .client import APIClient
+from .models import ProductCatalog
 
 logger = logging.getLogger(__name__)
-
-
-# ============================================================
-# LLM client protocol (so tests can pass any duck-typed mock)
-# ============================================================
-
-class LLMClient(Protocol):
-    """Minimal slice of the OpenAI client interface this lab needs."""
-    chat: Any
-
-
-def default_openai_client() -> LLMClient:
-    """Construct a real OpenAI client. Requires OPENAI_API_KEY in env."""
-    from openai import OpenAI  # local import — only needed when we run real
-    return OpenAI()
 
 
 # ============================================================
@@ -80,34 +65,24 @@ NL_QUERY_SYSTEM = (
 )
 
 
-def parse_nl_query(prompt: str, llm_client: Optional[LLMClient] = None,
+def parse_nl_query(prompt: str, llm_client=None,
                    *, model: str = "gpt-4o-mini") -> CatalogQuery:
-    """Lab 10: convert a free-form question into a validated CatalogQuery.
-
-    Steps:
-      1. client = llm_client or default_openai_client()
-      2. call client.chat.completions.create(...) with NL_QUERY_SYSTEM +
-         the user prompt, and response_format={"type": "json_object"}
-      3. read response.choices[0].message.content (default to "{}")
-      4. return CatalogQuery.model_validate_json(raw)  -- never trust the raw
-         JSON without validating through Pydantic.
-    """
-    raise NotImplementedError(
-        "TODO: call the LLM in JSON mode, then CatalogQuery.model_validate_json(...)"
-    )
+    """Lab 10: convert a free-form question into a validated CatalogQuery."""
+    # TODO: Make one LLM call that returns JSON, then validate it as a CatalogQuery.
+    #   Hint 1: use llm_client (or create an OpenAI() client if None), call
+    #           chat.completions.create with NL_QUERY_SYSTEM as the system message
+    #           and the user's prompt — search "openai json mode" for the format arg
+    #   Hint 2: the LLM returns raw JSON text — never trust it directly;
+    #           Pydantic's .model_validate_json() validates + parses in one step
+    raise NotImplementedError
 
 
-def apply_query(query: CatalogQuery, api: APIClient) -> list[dict]:
-    """Translate a CatalogQuery into APIClient calls (Lab 10).
-
-    Pure Python — no LLM here. Start from api.list_products(), then narrow by
-    each field that is *set* (skip the null ones):
-      - query.category        -> p.category matches (case-insensitive)
-      - query.max_price        -> p.price <= max_price  (guard for None, since 0 is falsy)
-      - query.in_stock_only    -> p.in_stock is True
-      - query.name_contains    -> substring of p.name (case-insensitive)
-    Return [p.model_dump() for p in items].
-    """
-    raise NotImplementedError(
-        "TODO: filter api.list_products() by the non-null query fields"
-    )
+def apply_query(query: CatalogQuery, catalog: ProductCatalog) -> list[dict]:
+    """Translate a CatalogQuery into catalog queries — pure Python, no LLM."""
+    # TODO: Start from all products, then narrow by each non-null query field.
+    #   Hint 1: catalog.list_all() gives you every Product; check each query field
+    #           (category, max_price, in_stock_only, name_contains) and filter only
+    #           when the field is set — careful: max_price=0 is valid, don't skip it
+    #   Hint 2: compare strings case-insensitively (.lower()); return dicts not
+    #           Pydantic objects (same conversion you'll use in Lab 11's tools)
+    raise NotImplementedError

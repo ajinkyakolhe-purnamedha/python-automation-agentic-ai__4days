@@ -47,14 +47,12 @@ cp ../labs/lab-11-catalog-agent/starter/catalog/agent.py catalog/   # from my-ca
 
 1. **Read the plumbing** — `catalog_agent = Agent(...)` is given. `@catalog_agent.tool` registers each function. `RunContext[ProductCatalog]` gives you `ctx.deps` — the injected catalog.
 
-2. **Fill the four `@catalog_agent.tool` functions.** Each calls `ctx.deps` (your `ProductCatalog`) and returns **JSON-friendly** values (`model_dump()` every `Product`):
-   ```python
-   @catalog_agent.tool
-   def search_products(ctx: RunContext[ProductCatalog], term: str) -> list[dict]:
-       """Find products whose name contains the given substring (case-insensitive)."""
-       return [p.model_dump() for p in ctx.deps.search_by_name(term)]
-   ```
-   Same for `list_products` (no extra params), `count_by_category` (no extra params), `update_price(ctx, product_id, new_price)`.
+2. **Fill the four `@catalog_agent.tool` functions.** Each one follows the same pattern:
+   - Access the catalog via `ctx.deps` (that's your injected `ProductCatalog`)
+   - Call the right `ProductCatalog` method (open `models.py` to see them)
+   - Return **JSON-friendly** values — tools can't return Pydantic objects; convert them first
+
+   The four tools: `list_products` (no extra params), `search_products(term)`, `count_by_category` (no extra params), `update_price(product_id, new_price)`. The starter hints tell you which `ProductCatalog` method maps to each.
 
 3. **Demo it** (no server needed — just run):
    ```python

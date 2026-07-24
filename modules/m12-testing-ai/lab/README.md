@@ -22,7 +22,7 @@ Each stub fails with a `pytest.fail(...)` until you implement it. The LLM is moc
 
 ## What to implement
 - **TestTools** — force a tool call with `FunctionModel`, then inspect the tool return in `capture_run_messages()`. Assert deterministic results (`count_by_category` → `{"Electronics": 3, "Fitness": 1}`, case-insensitive search, `update_price` mutates).
-- **TestCatalogQuerySchema** — `pytest.raises(ValidationError)` on bad LLM JSON (`CatalogQuery(max_price=-5.0)`); `apply_query(q, api)` filters by category/price and `in_stock_only`.
+- **TestCatalogQuerySchema** — `pytest.raises(ValidationError)` on bad LLM JSON (`CatalogQuery(max_price=-5.0)`); `apply_query(q, catalog)` filters by category/price and `in_stock_only`.
 - **TestAgentLoop** — use `FunctionModel` with `_scripted_calls` to script tool-call sequences; use `capture_run_messages()` to verify tool **order**. Include a `TestModel` smoke test that confirms all tools are callable.
 - **TestGoldenQueries** (`@pytest.mark.eval`) — parametrize over the JSON; assert tool calls match and every `expected_answer_contains` substring appears in `result.output`.
 

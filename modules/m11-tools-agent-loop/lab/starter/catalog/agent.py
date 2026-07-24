@@ -9,10 +9,13 @@ YOUR JOB this lab — fill the four ``@catalog_agent.tool`` function bodies.
 Usage (after filling in the tools)::
 
     from catalog.agent import catalog_agent
-    from catalog.client import APIClient
+    from catalog.models import ProductCatalog
+    from catalog.storage import seed_products
 
     result = catalog_agent.run_sync(
-        "What's our most expensive product?", deps=APIClient()
+        "What's our most expensive product?",
+        deps=ProductCatalog(seed_products()),
+        model="openai:gpt-4o-mini",
     )
     print(result.output)
 """
@@ -25,7 +28,7 @@ from typing import Optional
 from pydantic import BaseModel, Field, ValidationError
 from pydantic_ai import Agent, RunContext
 
-from .client import APIClient
+from .models import ProductCatalog, ProductUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +71,7 @@ SYSTEM_PROMPT = (
 )
 
 catalog_agent = Agent(
-    deps_type=APIClient,
+    deps_type=ProductCatalog,
     instructions=SYSTEM_PROMPT,
 )
 
@@ -78,33 +81,39 @@ catalog_agent = Agent(
 # ============================================================
 
 @catalog_agent.tool
-def list_products(ctx: RunContext[APIClient]) -> list[dict]:
+def list_products(ctx: RunContext[ProductCatalog]) -> list[dict]:
     """Return every product in the catalog."""
-    # TODO: return [p.model_dump() for p in ctx.deps.list_products()]
-    raise NotImplementedError("TODO: call ctx.deps.list_products() and model_dump() each Product")
+    # TODO: Get all products from the catalog and return them as a list of dicts.
+    #   Hint 1: ctx.deps is your ProductCatalog — look at its methods in models.py
+    #   Hint 2: tools must return JSON-friendly types, not Pydantic objects — recall .model_dump()
+    raise NotImplementedError
 
 
 @catalog_agent.tool
-def search_products(ctx: RunContext[APIClient], term: str) -> list[dict]:
+def search_products(ctx: RunContext[ProductCatalog], term: str) -> list[dict]:
     """Find products whose name contains the given substring (case-insensitive)."""
-    # TODO: filter ctx.deps.list_products() by term (case-insensitive),
-    #       return model_dump() of each matching product.
-    raise NotImplementedError("TODO: filter products by term, return dicts")
+    # TODO: Search the catalog by name and return matching products as dicts.
+    #   Hint 1: ProductCatalog has a method that filters by name substring
+    #   Hint 2: same pattern as list_products — call the method, convert each result
+    raise NotImplementedError
 
 
 @catalog_agent.tool
-def count_by_category(ctx: RunContext[APIClient]) -> dict[str, int]:
+def count_by_category(ctx: RunContext[ProductCatalog]) -> dict[str, int]:
     """Return a dict mapping each category to its product count."""
-    # TODO: return ctx.deps.count_by_category()
-    raise NotImplementedError("TODO: call ctx.deps.count_by_category()")
+    # TODO: Group products by category, then count each group.
+    #   Hint 1: ProductCatalog has a grouping method — it returns {category: [products]}
+    #   Hint 2: you need {category: count} — a dict comprehension with len() does it
+    raise NotImplementedError
 
 
 @catalog_agent.tool
-def update_price(ctx: RunContext[APIClient], product_id: int, new_price: float) -> dict:
+def update_price(ctx: RunContext[ProductCatalog], product_id: int, new_price: float) -> dict:
     """Set a product's price. Returns the updated product."""
-    # TODO: build a ProductUpdate(price=new_price), call
-    #       ctx.deps.update_product(product_id, patch), return .model_dump()
-    raise NotImplementedError("TODO: update the product's price, return the updated dict")
+    # TODO: Update the product's price and return the updated product as a dict.
+    #   Hint 1: ProductCatalog.update() takes an id and a ProductUpdate — check the import
+    #   Hint 2: ProductUpdate(price=new_price) builds the patch; .model_dump() the result
+    raise NotImplementedError
 
 
 # ============================================================
@@ -140,9 +149,9 @@ def parse_nl_query(prompt: str, llm_client=None,
         raise
 
 
-def apply_query(query: CatalogQuery, api: APIClient) -> list[dict]:
-    """Translate a CatalogQuery into APIClient calls (Lab 10)."""
-    items = api.list_products()
+def apply_query(query: CatalogQuery, catalog: ProductCatalog) -> list[dict]:
+    """Translate a CatalogQuery into catalog queries (Lab 10)."""
+    items = catalog.list_all()
     if query.category:
         items = [p for p in items if p.category.lower() == query.category.lower()]
     if query.max_price is not None:

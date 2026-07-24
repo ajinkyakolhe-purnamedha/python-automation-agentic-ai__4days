@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pydantic_ai
 import pytest
@@ -22,42 +21,18 @@ from catalog.agent import (
     apply_query,
     catalog_agent,
 )
-from catalog.client import APIClient
-from catalog.models import Product, ProductUpdate
+from catalog.models import Product, ProductCatalog
 
 pydantic_ai.models.ALLOW_MODEL_REQUESTS = False
 
 
 # ============================================================
-# Helpers — a fake APIClient backed by a list of Products
+# Helpers — a real ProductCatalog (no mocking needed)
 # ============================================================
 
-def _fake_api(products: list[Product]) -> MagicMock:
-    """A MagicMock(spec=APIClient) wired to behave like a working client."""
-    api = MagicMock(spec=APIClient)
-    state = {p.id: p for p in products}
-
-    api.list_products.side_effect = lambda: list(state.values())
-    api.get_product.side_effect = lambda pid: state[pid]
-
-    def _update(pid, patch: ProductUpdate):
-        target = state.get(pid, next(iter(state.values())))
-        updated = target.model_copy(
-            update=patch.model_dump(exclude_unset=True)
-        )
-        if pid in state:
-            state[pid] = updated
-        return updated
-    api.update_product.side_effect = _update
-
-    def _count():
-        d: dict[str, int] = {}
-        for p in state.values():
-            d[p.category] = d.get(p.category, 0) + 1
-        return d
-    api.count_by_category.side_effect = _count
-
-    return api
+def _fake_catalog(products: list[Product]) -> ProductCatalog:
+    """A real ProductCatalog — no mocking needed."""
+    return ProductCatalog(products)
 
 
 SAMPLE_PRODUCTS = [
@@ -102,10 +77,10 @@ def _scripted_calls(tool_sequence: list[tuple[str, dict]], final_answer: str):
 
 class TestTools:
     def test_list_products_returns_dicts(self):
-        api = _fake_api(SAMPLE_PRODUCTS)
+        catalog = _fake_catalog(SAMPLE_PRODUCTS)
         with catalog_agent.override(model=FunctionModel(_force_tool_call("list_products"))):
             with capture_run_messages() as msgs:
-                catalog_agent.run_sync("list all", deps=api)
+                catalog_agent.run_sync("list all", deps=catalog)
         tool_return = [
             p for msg in msgs for p in msg.parts if p.part_kind == "tool-return"
         ][0]
@@ -114,10 +89,10 @@ class TestTools:
         assert data[0]["name"] == "USB-C Cable"
 
     def test_search_products_is_case_insensitive(self):
-        api = _fake_api(SAMPLE_PRODUCTS)
+        catalog = _fake_catalog(SAMPLE_PRODUCTS)
         with catalog_agent.override(model=FunctionModel(_force_tool_call("search_products", term="KEYBOARD"))):
             with capture_run_messages() as msgs:
-                catalog_agent.run_sync("find keyboard", deps=api)
+                catalog_agent.run_sync("find keyboard", deps=catalog)
         tool_return = [
             p for msg in msgs for p in msg.parts if p.part_kind == "tool-return"
         ][0]
@@ -126,10 +101,10 @@ class TestTools:
         assert data[0]["id"] == 2
 
     def test_count_by_category(self):
-        api = _fake_api(SAMPLE_PRODUCTS)
+        catalog = _fake_catalog(SAMPLE_PRODUCTS)
         with catalog_agent.override(model=FunctionModel(_force_tool_call("count_by_category"))):
             with capture_run_messages() as msgs:
-                catalog_agent.run_sync("count", deps=api)
+                catalog_agent.run_sync("count", deps=catalog)
         tool_return = [
             p for msg in msgs for p in msg.parts if p.part_kind == "tool-return"
         ][0]
@@ -137,12 +112,12 @@ class TestTools:
         assert data == {"Electronics": 3, "Fitness": 1}
 
     def test_update_price_mutates(self):
-        api = _fake_api(SAMPLE_PRODUCTS)
+        catalog = _fake_catalog(SAMPLE_PRODUCTS)
         with catalog_agent.override(model=FunctionModel(
             _force_tool_call("update_price", product_id=1, new_price=10.0)
         )):
             with capture_run_messages() as msgs:
-                catalog_agent.run_sync("update price", deps=api)
+                catalog_agent.run_sync("update price", deps=catalog)
         tool_return = [
             p for msg in msgs for p in msg.parts if p.part_kind == "tool-return"
         ][0]
@@ -151,9 +126,9 @@ class TestTools:
 
     def test_all_tools_callable_via_test_model(self):
         """TestModel calls every registered tool with default args — smoke test."""
-        api = _fake_api(SAMPLE_PRODUCTS)
+        catalog = _fake_catalog(SAMPLE_PRODUCTS)
         with catalog_agent.override(model=TestModel()):
-            result = catalog_agent.run_sync("test", deps=api)
+            result = catalog_agent.run_sync("test", deps=catalog)
         assert result.output
 
 
@@ -172,14 +147,14 @@ class TestCatalogQuerySchema:
             CatalogQuery(max_price=-5.0)
 
     def test_apply_query_filters_by_category_and_price(self):
-        api = _fake_api(SAMPLE_PRODUCTS)
+        catalog = _fake_catalog(SAMPLE_PRODUCTS)
         q = CatalogQuery(category="Electronics", max_price=1000.0)
-        result = apply_query(q, api)
+        result = apply_query(q, catalog)
         assert {p["id"] for p in result} == {1}
 
     def test_apply_query_in_stock_only(self):
-        api = _fake_api(SAMPLE_PRODUCTS)
-        result = apply_query(CatalogQuery(in_stock_only=True), api)
+        catalog = _fake_catalog(SAMPLE_PRODUCTS)
+        result = apply_query(CatalogQuery(in_stock_only=True), catalog)
         assert {p["id"] for p in result} == {1, 2, 3}
 
 
@@ -192,18 +167,18 @@ class TestAgentLoop:
         def just_answer(messages, info):
             return ModelResponse(parts=[TextPart("No tools needed, the answer is 42.")])
 
-        api = _fake_api(SAMPLE_PRODUCTS)
+        catalog = _fake_catalog(SAMPLE_PRODUCTS)
         with catalog_agent.override(model=FunctionModel(just_answer)):
-            result = catalog_agent.run_sync("nothing to do", deps=api)
+            result = catalog_agent.run_sync("nothing to do", deps=catalog)
         assert "42" in result.output
 
     def test_single_tool_call_then_answer(self):
-        api = _fake_api(SAMPLE_PRODUCTS)
+        catalog = _fake_catalog(SAMPLE_PRODUCTS)
         with catalog_agent.override(model=FunctionModel(
             _scripted_calls([("count_by_category", {})], "We have 3 Electronics and 1 Fitness product.")
         )):
             with capture_run_messages() as msgs:
-                result = catalog_agent.run_sync("how many electronics?", deps=api)
+                result = catalog_agent.run_sync("how many electronics?", deps=catalog)
         tool_calls = [
             p.tool_name for msg in msgs for p in msg.parts if p.part_kind == "tool-call"
         ]
@@ -211,7 +186,7 @@ class TestAgentLoop:
         assert "3 Electronics" in result.output
 
     def test_chained_tool_calls_in_order(self):
-        api = _fake_api(SAMPLE_PRODUCTS)
+        catalog = _fake_catalog(SAMPLE_PRODUCTS)
         with catalog_agent.override(model=FunctionModel(
             _scripted_calls(
                 [("search_products", {"term": "keyboard"}),
@@ -220,7 +195,7 @@ class TestAgentLoop:
             )
         )):
             with capture_run_messages() as msgs:
-                result = catalog_agent.run_sync("drop the keyboard to 4999", deps=api)
+                result = catalog_agent.run_sync("drop the keyboard to 4999", deps=catalog)
         tool_calls = [
             p.tool_name for msg in msgs for p in msg.parts if p.part_kind == "tool-call"
         ]
@@ -256,7 +231,7 @@ class TestGoldenQueries:
         "case", _golden_cases(), ids=[c["id"] for c in _golden_cases()],
     )
     def test_case_runs_expected_tools(self, case):
-        api = _fake_api(SAMPLE_PRODUCTS)
+        catalog = _fake_catalog(SAMPLE_PRODUCTS)
         tool_sequence = [
             (name, _arguments_for(name)) for name in case["expected_tool_calls"]
         ]
@@ -266,7 +241,7 @@ class TestGoldenQueries:
             _scripted_calls(tool_sequence, answer)
         )):
             with capture_run_messages() as msgs:
-                result = catalog_agent.run_sync(case["prompt"], deps=api)
+                result = catalog_agent.run_sync(case["prompt"], deps=catalog)
 
         tool_calls = [
             p.tool_name for msg in msgs for p in msg.parts if p.part_kind == "tool-call"
