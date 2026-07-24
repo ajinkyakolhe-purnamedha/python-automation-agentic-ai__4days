@@ -1,0 +1,20 @@
+[
+  {
+    "id": "eval-01",
+    "prompt": "How many products are in the Electronics category?",
+    "expected_tool_calls": ["count_by_category"],
+    "expected_answer_contains": ["Electronics"]
+  },
+  {
+    "id": "eval-02",
+    "prompt": "Find me anything with 'speaker' in the name.",
+    "expected_tool_calls": ["search_products"],
+    "expected_answer_contains": ["Bluetooth Speaker"]
+  },
+  {
+    "id": "eval-03",
+    "prompt": "Drop the price of product 1 to ten rupees.",
+    "expected_tool_calls": ["update_price"],
+    "expected_answer_contains": ["10", "USB-C Cable"]
+  }
+]

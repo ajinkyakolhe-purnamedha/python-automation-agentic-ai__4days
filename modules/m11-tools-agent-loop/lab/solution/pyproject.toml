@@ -13,6 +13,7 @@ dependencies = [
     "pydantic>=2.6",
     "requests>=2.31",
     "openai>=1.30",
+    "pydantic-ai>=2.0",
 ]
 
 [project.optional-dependencies]
@@ -22,11 +23,6 @@ dev = [
     "pytest-html>=4.1",
     "pytest-mock>=3.12",
     "httpx>=0.27",
-]
-ai = [
-    # Lab 11 §2b / stretch only — rebuild the agent with a framework.
-    # Not part of the catalog runtime; the hand-rolled agent has no extra deps.
-    "pydantic-ai>=0.0.14",
 ]
 
 [tool.setuptools.packages.find]

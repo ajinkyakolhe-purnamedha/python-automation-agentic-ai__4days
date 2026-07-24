@@ -1,0 +1,638 @@
+<meta charset="utf-8">
+<title>Module 10 · The Power of LLMs — Acuity Day 4</title>
+<style>
+  :root{
+    --bg:#E7EAF1; --bg2:#EFF1F7; --slide:#FFFFFF; --ink:#131A24; --ink-soft:#586477;
+    --line:#E4E8EF; --accent:#3A54D8; --accent2:#0FA9A0; --accent-soft:#EBEEFC; --accent-line:#CBD5F7;
+    --code-bg:#F6F8FC; --code-line:#E6EBF3; --code-head:#EEF2F9;
+    --grid:rgba(58,84,216,.055); --glow:rgba(58,84,216,.10); --glow2:rgba(15,169,160,.08);
+    --sy-com:#8A97A6; --sy-str:#0A7D55; --sy-num:#B87503; --sy-kw:#8250DF; --sy-con:#0550AE; --sy-bi:#0F63C4;
+    --good:#1E874B; --bad:#C23B47;
+    --shadow:0 30px 70px -26px rgba(19,26,36,.32), 0 4px 14px -6px rgba(19,26,36,.16);
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","Menlo","Cascadia Code","Roboto Mono",monospace;
+    --grad:linear-gradient(102deg,var(--accent) 0%,var(--accent2) 118%);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#080B11; --bg2:#0E131B; --slide:#151C26; --ink:#EAEEF5; --ink-soft:#98A6B8;
+      --line:#26313F; --accent:#8098FF; --accent2:#3FD6C8; --accent-soft:#1B2540; --accent-line:#2E3C64;
+      --code-bg:#0E141D; --code-line:#232F3D; --code-head:#131B26;
+      --grid:rgba(128,152,255,.07); --glow:rgba(128,152,255,.14); --glow2:rgba(63,214,200,.10);
+      --sy-com:#5E6B7A; --sy-str:#7EE0A8; --sy-num:#F0B37E; --sy-kw:#C792EA; --sy-con:#79B8FF; --sy-bi:#8AC7FF;
+      --good:#57C98B; --bad:#F0808C;
+      --shadow:0 34px 80px -26px rgba(0,0,0,.75), 0 4px 14px -6px rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#E7EAF1; --bg2:#EFF1F7; --slide:#FFFFFF; --ink:#131A24; --ink-soft:#586477;
+    --line:#E4E8EF; --accent:#3A54D8; --accent2:#0FA9A0; --accent-soft:#EBEEFC; --accent-line:#CBD5F7;
+    --code-bg:#F6F8FC; --code-line:#E6EBF3; --code-head:#EEF2F9;
+    --grid:rgba(58,84,216,.055); --glow:rgba(58,84,216,.10); --glow2:rgba(15,169,160,.08);
+    --sy-com:#8A97A6; --sy-str:#0A7D55; --sy-num:#B87503; --sy-kw:#8250DF; --sy-con:#0550AE; --sy-bi:#0F63C4;
+    --good:#1E874B; --bad:#C23B47;
+    --shadow:0 30px 70px -26px rgba(19,26,36,.32), 0 4px 14px -6px rgba(19,26,36,.16);
+  }
+  :root[data-theme="dark"]{
+    --bg:#080B11; --bg2:#0E131B; --slide:#151C26; --ink:#EAEEF5; --ink-soft:#98A6B8;
+    --line:#26313F; --accent:#8098FF; --accent2:#3FD6C8; --accent-soft:#1B2540; --accent-line:#2E3C64;
+    --code-bg:#0E141D; --code-line:#232F3D; --code-head:#131B26;
+    --grid:rgba(128,152,255,.07); --glow:rgba(128,152,255,.14); --glow2:rgba(63,214,200,.10);
+    --sy-com:#5E6B7A; --sy-str:#7EE0A8; --sy-num:#F0B37E; --sy-kw:#C792EA; --sy-con:#79B8FF; --sy-bi:#8AC7FF;
+    --good:#57C98B; --bad:#F0808C;
+    --shadow:0 34px 80px -26px rgba(0,0,0,.75), 0 4px 14px -6px rgba(0,0,0,.55);
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;color:var(--ink);font-family:var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased;
+       background:
+         radial-gradient(60% 55% at 12% 8%, var(--glow) 0%, transparent 60%),
+         radial-gradient(55% 50% at 92% 96%, var(--glow2) 0%, transparent 60%),
+         linear-gradient(160deg,var(--bg) 0%,var(--bg2) 100%);}
+
+  /* ---- scaled stage ---- */
+  #viewport{position:fixed;inset:0}
+  .stage{position:absolute;top:50%;left:50%;width:1280px;height:720px;transform-origin:center center}
+  .slide{position:absolute;inset:0;background:var(--slide);border:1px solid var(--line);border-radius:18px;
+         box-shadow:var(--shadow);padding:60px 68px 56px;display:none;flex-direction:column;overflow:hidden}
+  .slide.active{display:flex}
+  /* textured backdrop + accent top-rail on every slide */
+  .slide::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:34px 34px;-webkit-mask-image:radial-gradient(80% 70% at 80% 0%,#000 0%,transparent 72%);
+            mask-image:radial-gradient(80% 70% at 80% 0%,#000 0%,transparent 72%);opacity:.9}
+  .slide::after{content:"";position:absolute;top:0;left:0;right:0;height:5px;border-radius:18px 18px 0 0;
+    background:var(--grad);z-index:2;opacity:.95}
+  .slide > *{position:relative;z-index:1}
+
+  @media (prefers-reduced-motion:no-preference){
+    .slide.active > *:not(.prog):not(.foot){animation:rise .5s both cubic-bezier(.2,.72,.2,1)}
+    .slide.active > *:nth-child(1){animation-delay:.03s}
+    .slide.active > *:nth-child(2){animation-delay:.09s}
+    .slide.active > *:nth-child(3){animation-delay:.15s}
+    .slide.active > *:nth-child(4){animation-delay:.21s}
+    .slide.active > *:nth-child(5){animation-delay:.27s}
+    .slide.active > *:nth-child(6){animation-delay:.33s}
+    @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  }
+
+  /* progress + footer chrome */
+  .prog{position:absolute;top:0;left:0;height:5px;background:var(--grad);border-radius:18px 0 0 0;
+        z-index:3;box-shadow:0 0 12px var(--glow);transition:width .4s cubic-bezier(.4,.7,.2,1)}
+  .foot{position:absolute;left:68px;right:68px;bottom:22px;display:flex;justify-content:space-between;align-items:center;
+        font-size:12.5px;color:var(--ink-soft);font-family:var(--mono);letter-spacing:.05em;z-index:2}
+  .foot .brand{display:flex;align-items:center;gap:9px}
+  .foot .dot{width:7px;height:7px;border-radius:2px;background:var(--grad);transform:rotate(45deg)}
+
+  /* type primitives */
+  .eyebrow{display:inline-flex;align-items:center;gap:11px;font-family:var(--mono);font-size:13.5px;letter-spacing:.17em;
+           text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 0 22px}
+  .eyebrow::before{content:"";width:22px;height:2px;border-radius:2px;background:var(--grad)}
+  h1.h{font-size:41px;line-height:1.1;font-weight:800;letter-spacing:-.022em;margin:0 0 18px;text-wrap:balance;position:relative;padding-bottom:14px}
+  h1.h::after{content:"";position:absolute;left:0;bottom:0;width:56px;height:4px;border-radius:3px;background:var(--grad)}
+  .lead{font-size:22px;line-height:1.5;color:var(--ink);margin:0 0 24px;max-width:60ch;font-weight:400}
+  .lead.soft{color:var(--ink-soft)}
+  strong{font-weight:700}
+  .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .num{color:var(--good)} .no{color:var(--bad)}
+  code.inl{font-family:var(--mono);font-size:.88em;background:var(--accent-soft);color:var(--accent);
+           padding:.1em .4em;border-radius:6px;font-weight:600;white-space:nowrap;border:1px solid var(--accent-line)}
+
+  /* code block — window with header */
+  pre.code{margin:0;background:var(--code-bg);border:1px solid var(--code-line);border-radius:13px;
+           padding:44px 26px 22px;overflow-x:auto;position:relative;
+           box-shadow:0 18px 40px -24px rgba(19,26,36,.4), inset 0 1px 0 rgba(255,255,255,.35)}
+  pre.code::before{content:"";position:absolute;top:0;left:0;right:0;height:34px;background:var(--code-head);
+           border-bottom:1px solid var(--code-line);border-radius:13px 13px 0 0}
+  pre.code::after{content:"● python";position:absolute;top:9px;left:16px;font-family:var(--mono);font-size:12px;
+           letter-spacing:.06em;color:var(--ink-soft);font-weight:600;z-index:1}
+  pre.code[data-lang="bash"]::after{content:"● bash"}
+  pre.code[data-lang="json"]::after{content:"● json"}
+  pre.code[data-lang="text"]::after{content:""}
+  pre.code code{font-family:var(--mono);font-size:20px;line-height:1.62;color:var(--ink);display:block;white-space:pre;position:relative;z-index:1}
+  .t-com{color:var(--sy-com);font-style:italic} .t-str{color:var(--sy-str)} .t-num{color:var(--sy-num)}
+  .t-kw{color:var(--sy-kw);font-weight:600} .t-con{color:var(--sy-con);font-weight:600} .t-bi{color:var(--sy-bi)}
+
+  .along{margin-top:auto;display:flex;align-items:center;gap:15px;
+         background:linear-gradient(100deg,var(--accent-soft),transparent 90%);
+         border:1px solid var(--accent-line);border-radius:12px;padding:15px 20px;font-size:17px;color:var(--ink);
+         box-shadow:0 10px 30px -20px var(--glow)}
+  .along .play{flex:none;width:34px;height:34px;border-radius:9px;background:var(--grad);color:#fff;
+         display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;box-shadow:0 6px 16px -6px var(--glow)}
+  .along code{font-family:var(--mono);font-size:.92em;color:var(--accent);font-weight:600}
+  .along b{font-weight:700}
+
+  /* predict callout — a "pause & ask the room" beat (retrieval before reveal) */
+  .predict{display:flex;align-items:center;gap:13px;margin:0 0 6px;
+         background:linear-gradient(100deg,rgba(15,169,160,.12),transparent 92%);
+         border:1px solid var(--accent2);border-radius:12px;padding:12px 18px;font-size:18px;color:var(--ink)}
+  .predict .q{flex:none;width:30px;height:30px;border-radius:8px;
+         background:linear-gradient(120deg,var(--accent2),var(--accent));color:#fff;
+         display:flex;align-items:center;justify-content:center;font-size:15px}
+  .predict b{font-weight:700;color:var(--accent2)}
+
+  /* pipeline steps as chips/cards */
+  .steps{display:flex;flex-direction:column;gap:13px;margin:2px 0 24px}
+  .step{display:flex;gap:16px;align-items:center;font-size:20px;line-height:1.35;background:var(--code-bg);
+        border:1px solid var(--code-line);border-radius:12px;padding:14px 18px}
+  .step .k{font-family:var(--mono);font-size:13px;font-weight:700;color:#fff;background:var(--grad);
+           padding:5px 11px;border-radius:7px;white-space:nowrap;letter-spacing:.04em}
+  .step b{font-weight:700}
+
+  /* generic list */
+  ul.clean{list-style:none;margin:0 0 22px;padding:0;display:flex;flex-direction:column;gap:14px}
+  ul.clean li{font-size:21px;line-height:1.45;padding-left:30px;position:relative;color:var(--ink)}
+  ul.clean li::before{content:"";position:absolute;left:0;top:.48em;width:11px;height:11px;border-radius:3px;
+           background:var(--grad);transform:rotate(45deg);box-shadow:0 3px 8px -3px var(--glow)}
+  ul.clean li b{font-weight:700}
+
+  /* week map */
+  pre.map{margin:0;background:var(--code-bg);border:1px solid var(--code-line);border-radius:13px;padding:26px 30px;
+          font-family:var(--mono);font-size:20px;line-height:1.85;color:var(--ink);overflow-x:auto;
+          box-shadow:0 18px 40px -26px rgba(19,26,36,.4)}
+  pre.map b{color:var(--accent);font-weight:700}
+
+  /* moves table as rows */
+  table.moves{border-collapse:separate;border-spacing:0 0;width:100%;font-size:20px}
+  table.moves td{padding:15px 16px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.moves tr:last-child td{border-bottom:none}
+  table.moves td.tool{font-family:var(--mono);color:var(--accent);white-space:nowrap;width:46%;font-weight:600}
+  table.moves td.tool .no{color:var(--bad)}
+
+  .grow{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center}
+
+  /* ---- title slide ---- */
+  .slide.title{justify-content:center;padding:60px 76px}
+  .slide.title::before{-webkit-mask-image:radial-gradient(90% 90% at 85% 12%,#000,transparent 72%);
+            mask-image:radial-gradient(90% 90% at 85% 12%,#000,transparent 72%);opacity:1}
+  .tglow{position:absolute;width:620px;height:620px;right:-120px;top:-160px;border-radius:50%;z-index:0;
+         background:radial-gradient(circle,var(--glow) 0%,transparent 62%);pointer-events:none}
+  .kicker{display:inline-flex;align-items:center;gap:12px;font-family:var(--mono);font-size:14px;letter-spacing:.24em;
+          text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 0 22px}
+  .kicker::before{content:"";width:30px;height:2px;background:var(--grad);border-radius:2px}
+  .slide.title h1{font-size:92px;line-height:.94;font-weight:800;letter-spacing:-.035em;margin:0 0 14px}
+  .slide.title h2{font-size:38px;font-weight:500;color:var(--ink-soft);margin:0;letter-spacing:-.012em;max-width:22ch;line-height:1.15}
+  .slide.title h2 b{color:var(--ink);font-weight:800}
+  .metaline{margin-top:38px;display:inline-flex;align-items:center;gap:14px;font-family:var(--mono);font-size:17px;
+            color:var(--ink-soft);letter-spacing:.02em;background:var(--code-bg);border:1px solid var(--code-line);
+            padding:12px 20px;border-radius:11px}
+  .metaline b{color:var(--accent);font-weight:700}
+
+  /* ---- section divider ---- */
+  .slide.section{justify-content:center;overflow:hidden}
+  .ghost{position:absolute;right:-30px;bottom:-140px;font-size:520px;font-weight:800;line-height:.7;z-index:0;
+          letter-spacing:-.05em;font-variant-numeric:tabular-nums;color:transparent;
+          -webkit-text-stroke:2px var(--accent-line);opacity:.55;pointer-events:none;user-select:none}
+  .secrow{display:flex;align-items:center;gap:34px}
+  .secnum{font-size:132px;font-weight:800;line-height:.8;letter-spacing:-.04em;font-variant-numeric:tabular-nums;
+          background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;
+          flex:none;filter:drop-shadow(0 12px 24px var(--glow))}
+  .secdiv{width:2px;align-self:stretch;background:var(--grad);border-radius:2px;opacity:.5;margin:6px 0}
+  .secmeta .eyebrow{margin-bottom:14px}
+  .secmeta h1{font-size:58px;font-weight:800;letter-spacing:-.028em;margin:0;line-height:1.02}
+  .secmeta .sub{margin-top:20px;font-size:19px;color:var(--ink-soft);font-family:var(--mono);letter-spacing:.02em;max-width:52ch;line-height:1.7}
+  .secmeta .sub b{color:var(--ink)}
+
+  /* ---- lab slide ---- */
+  .slide.lab::before{opacity:1;-webkit-mask-image:radial-gradient(90% 80% at 12% 6%,#000,transparent 70%);
+            mask-image:radial-gradient(90% 80% at 12% 6%,#000,transparent 70%)}
+  .labtag{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:14px;font-weight:700;
+          color:#fff;letter-spacing:.08em;background:var(--grad);padding:8px 16px;border-radius:999px;margin:0 0 22px;
+          box-shadow:0 10px 24px -10px var(--glow)}
+  .slide.lab h1{font-size:48px;font-weight:800;letter-spacing:-.022em;margin:0 0 12px}
+  .endstate{margin-top:auto;background:var(--code-bg);border:1px solid var(--code-line);border-left:4px solid var(--accent);
+            border-radius:12px;padding:17px 22px;font-family:var(--mono);font-size:18px;color:var(--ink);
+            box-shadow:0 14px 34px -22px rgba(19,26,36,.4)}
+  .endstate b{color:var(--good);font-weight:700}
+
+  /* ---- off-stage nav chrome ---- */
+  .nav{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:6px;z-index:20;
+       background:var(--slide);border:1px solid var(--line);border-radius:14px;padding:6px;
+       box-shadow:0 12px 30px -12px rgba(0,0,0,.4)}
+  .nav button{font-family:var(--mono);font-size:15px;border:none;background:transparent;color:var(--ink);
+              width:38px;height:38px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+              transition:background .14s,color .14s}
+  .nav button:hover{background:var(--accent-soft);color:var(--accent)}
+  .nav button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .nav .count{font-family:var(--mono);font-size:13.5px;color:var(--ink-soft);min-width:66px;text-align:center;font-variant-numeric:tabular-nums}
+  .hint{position:fixed;bottom:22px;right:20px;font-family:var(--mono);font-size:12px;color:var(--ink-soft);opacity:.55;z-index:20}
+</style>
+
+<div id="viewport">
+  <div class="stage">
+
+    <!-- 1 · DAY 4 TITLE -->
+    <section class="slide title active">
+      <span class="tglow"></span>
+      <p class="kicker">Acuity Training · 4 Days</p>
+      <h1><span class="grad">Day 4</span></h1>
+      <h2>Add AI to the Catalog, <b>then test the AI</b></h2>
+      <p class="metaline"><b>6 hours</b> · 3 modules · 3 labs · the day Day 3 was secretly setting up</p>
+    </section>
+
+    <!-- 2 · Three days of Python -->
+    <section class="slide">
+      <p class="eyebrow">Day 4 · The goal</p>
+      <h1 class="h">Three days of Python. Today, one new idea: the LLM.</h1>
+      <p class="lead">You have a tested, CI-green catalog with a typed client. Today you bolt an <strong>LLM agent</strong> onto it — and lock it under the <strong>same</strong> testing discipline.</p>
+      <ul class="clean">
+        <li><b>M10</b> — the <em>power</em> of LLMs: closed APIs, open models, and your first validated LLM app</li>
+        <li><b>M11</b> — tools = functions; the plan→act→observe loop</li>
+        <li><b>M12</b> ⭐ — test the AI: shape &amp; behaviour, not prose</li>
+      </ul>
+      <p class="lead soft">The agent's tools wrap the <code class="inl">ProductCatalog</code> you built Day 1. The catalog is injected like <code class="inl">Session</code> was Day 3.</p>
+    </section>
+
+    <!-- 3 · Today's arc -->
+    <section class="slide">
+      <p class="eyebrow">Day 4 · The arc</p>
+      <h1 class="h">Today's arc</h1>
+      <table class="moves">
+        <tr><td class="tool">M10</td><td>Power of LLMs: APIs · open models · first app</td><td>Lab 10: classify a Product + NL query → <code class="inl">CatalogQuery</code></td></tr>
+        <tr><td class="tool">M11</td><td>Tools as functions + agent loop</td><td>Lab 11: build <code class="inl">CatalogAgent</code></td></tr>
+        <tr><td class="tool">M12 ⭐</td><td><b>Testing AI tools &amp; outputs</b></td><td>Lab 12: test the agent</td></tr>
+      </table>
+      <p class="lead soft" style="margin-top:22px">End-of-day: an agentic, <strong>tested</strong> Python system on your laptop — no new framework.</p>
+    </section>
+
+    <!-- 4 · MODULE 10 TITLE -->
+    <section class="slide title">
+      <span class="tglow"></span>
+      <p class="kicker">Module 10</p>
+      <h1><span class="grad">The Power of LLMs</span></h1>
+      <h2>~40 min · then 80 min lab</h2>
+      <p class="metaline">what LLMs can do (closed &amp; open), then build your first <b>validated LLM feature</b></p>
+    </section>
+
+    <!-- 5 · Module 10 — three sections -->
+    <section class="slide">
+      <p class="eyebrow">Module 10 · Overview</p>
+      <h1 class="h">Module 10 — three sections</h1>
+      <div class="steps">
+        <div class="step"><span class="k">§1</span><div><b>Closed-source API power</b> — one hosted engine, many tasks (OpenAI; Gemini is the same shape)</div></div>
+        <div class="step"><span class="k">§2</span><div><b>Open-source power</b> — models you run yourself, no API key (<code class="inl">transformers</code>)</div></div>
+        <div class="step"><span class="k">§3</span><div><b>Your first LLM app</b> — prompt → structured output → <b>validate</b> → ready for M11</div></div>
+      </div>
+      <p class="lead soft">The first two show <em>what's possible</em>. The third is the part Lab 10 makes you build.</p>
+    </section>
+
+    <!-- 6 · Section 1 divider -->
+    <section class="slide section">
+      <span class="ghost">1</span>
+      <div class="secrow">
+        <div class="secnum">1</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>Closed-source API power</h1>
+          <div class="sub">one API call, many tasks</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7 · 1.1 AI taxonomy -->
+    <section class="slide">
+      <p class="eyebrow">1.1 · AI → ML → GenAI → Agentic</p>
+      <h1 class="h">AI → ML → GenAI → Agentic</h1>
+      <div class="steps">
+        <div class="step"><span class="k">AI</span><div>any system that "appears intelligent"</div></div>
+        <div class="step"><span class="k">ML</span><div>systems that learn patterns from data</div></div>
+        <div class="step"><span class="k">GenAI</span><div>ML that produces novel text / images / code</div></div>
+        <div class="step"><span class="k">Agentic AI</span><div>GenAI + tools + a loop + a goal</div></div>
+      </div>
+      <p class="lead">The <strong>agent is the loop around the LLM</strong>, not the LLM itself. The LLM is a stateless string-to-string machine; the state — <strong>tools, memory, goals — lives in <em>your</em> code.</strong> That's why Day 1–3 Python matters: you write the loop.</p>
+    </section>
+
+    <!-- 8 · 1.2 LLM is a task engine -->
+    <section class="slide">
+      <p class="eyebrow">1.2 · The LLM is a task engine</p>
+      <h1 class="h">Text in → text out, aimed at a task</h1>
+      <table class="moves">
+        <tr><td class="tool">classify</td><td>a label (priority = high/low)</td></tr>
+        <tr><td class="tool">extract</td><td>structured fields (a <code class="inl">CatalogQuery</code>)</td></tr>
+        <tr><td class="tool">summarize</td><td>a shorter text</td></tr>
+        <tr><td class="tool">generate</td><td>new text (a reply draft)</td></tr>
+        <tr><td class="tool">transform</td><td>reshaped text (NL → JSON)</td></tr>
+        <tr><td class="tool">reason</td><td>a decision + which tool to call next</td></tr>
+      </table>
+      <p class="lead soft" style="margin-top:14px">Each is <strong>spec'able</strong>: define the input, output shape, constraints. M11's tools are just "reason → pick a task."</p>
+    </section>
+
+    <!-- 9 · 1.3 One API call -->
+    <section class="slide">
+      <p class="eyebrow">1.3 · One API call does all of them</p>
+      <h1 class="h">Same method, different prompt</h1>
+      <p class="lead">The task lives in the words, not the API.</p>
+      <pre class="code"><code class="py">resp = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "system", "content": "Classify ticket priority: high/low."},
+              {"role": "user", "content": ticket.subject}],
+)
+resp.choices[0].message.content   # -> "high"</code></pre>
+      <p class="lead soft" style="margin-top:14px">One hosted model, billed per token, no weights to manage. <strong>The prompt is the spec</strong> — role, constraints, output shape (more in §3).</p>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook: module-10 §1 — <b>classify + summarize a support ticket</b></div></div>
+    </section>
+
+    <!-- 10 · 1.4 Multimodal -->
+    <section class="slide">
+      <p class="eyebrow">1.4 · Multimodal — not just text</p>
+      <h1 class="h">The hosted frontier models take more than text</h1>
+      <ul class="clean">
+        <li><b>Vision in</b> — an image + "what's broken in this photo?" → text</li>
+        <li><b>Audio in</b> — a recording → a transcript (or an answer)</li>
+        <li><b>Image out</b> — a prompt → a generated image</li>
+      </ul>
+      <p class="lead soft">Same <code class="inl">create()</code> shape, different content parts. The task-engine idea is unchanged — only the modality of "text in" widens.</p>
+    </section>
+
+    <!-- 11 · 1.5 Gemini -->
+    <section class="slide">
+      <p class="eyebrow">1.5 · Gemini — same shape, different vendor</p>
+      <h1 class="h">Closed-source isn't one company</h1>
+      <p class="lead">Google's <strong>Gemini</strong> API has the <strong>same request shape</strong>: a model id, a list of messages, a structured response.</p>
+      <pre class="code"><code class="py">from google import genai
+client = genai.Client()                          # GOOGLE_API_KEY in env
+resp = client.models.generate_content(
+    model="gemini-2.0-flash",
+    contents="Classify this ticket: my screen is cracked",
+)
+resp.text                                        # -> "hardware"</code></pre>
+      <p class="lead soft" style="margin-top:14px">We use <strong>OpenAI</strong> for the rest of the course (M11/M12 agent). Point: the <em>pattern</em> is portable; vendors are swappable.</p>
+    </section>
+
+    <!-- 12 · 1.6 Tokens/context/cost -->
+    <section class="slide">
+      <p class="eyebrow">1.6 · Tokens · context · cost · latency</p>
+      <h1 class="h">Tokens, context, cost, latency</h1>
+      <table class="moves">
+        <tr><td class="tool">Token</td><td>piece of a word — ≈ ¾ of an English word</td></tr>
+        <tr><td class="tool">Context</td><td>tokens visible at once — 128k for <code class="inl">gpt-4o-mini</code></td></tr>
+        <tr><td class="tool">Input cost</td><td>~$0.15 / M input tokens</td></tr>
+        <tr><td class="tool">Output cost</td><td>~$0.60 / M output tokens</td></tr>
+        <tr><td class="tool">Latency</td><td>~500 ms TTFT + ~50 tok/s</td></tr>
+      </table>
+      <p class="lead soft" style="margin-top:14px">One agent step ≈ <strong>500–2000 in + 100–300 out</strong> tokens. A multi-step agent multiplies that — budget per call, cap the steps.</p>
+    </section>
+
+    <!-- 13 · Section 2 divider -->
+    <section class="slide section">
+      <span class="ghost">2</span>
+      <div class="secrow">
+        <div class="secnum">2</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>Open-source LLM power</h1>
+          <div class="sub">models you run yourself — no API key</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 14 · 2.1 Why open-source -->
+    <section class="slide">
+      <p class="eyebrow">2.1 · Why open-source at all</p>
+      <h1 class="h">Why open-source at all</h1>
+      <p class="lead">The hosted API is easy — but sometimes you can't or shouldn't use it:</p>
+      <table class="moves">
+        <tr><td class="tool">Privacy / PII</td><td>data never leaves your machine — no third party</td></tr>
+        <tr><td class="tool">Cost at scale</td><td>millions of calls: your hardware beats per-token billing</td></tr>
+        <tr><td class="tool">Offline</td><td>runs with no network</td></tr>
+        <tr><td class="tool">Control</td><td>you own the weights — pin a version, fine-tune freely</td></tr>
+      </table>
+      <p class="lead soft" style="margin-top:14px">Trade-off: <em>you</em> run the infra. For a demo, a laptop CPU is enough.</p>
+    </section>
+
+    <!-- 15 · 2.2 pipeline() -->
+    <section class="slide">
+      <p class="eyebrow">2.2 · pipeline() — one line to a task</p>
+      <h1 class="h"><code class="inl">pipeline()</code> — one line to a task</h1>
+      <p class="lead">Hugging Face <code class="inl">transformers</code> wraps "load model → preprocess → infer → postprocess" into <strong>one call</strong>:</p>
+      <pre class="code"><code class="py">from transformers import pipeline
+clf = pipeline("zero-shot-classification",
+               model="typeform/distilbert-base-uncased-mnli")
+clf("my iPhone won't charge", candidate_labels=["urgent", "billing", "hardware"])
+# -> {'labels': ['hardware', 'urgent', ...], 'scores': [0.91, 0.06, ...]}</code></pre>
+      <p class="lead soft" style="margin-top:14px">Pick the <strong>task string</strong>; the pipeline pulls a suitable model. No prompt engineering — the task <em>is</em> the model.</p>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook: module-10 §2 — <b>zero-shot classify + NER live; ASR / caption / translate shown</b></div></div>
+    </section>
+
+    <!-- 16 · 2.3 Closed vs open -->
+    <section class="slide">
+      <p class="eyebrow">2.3 · Closed vs open — when to reach for which</p>
+      <h1 class="h">Closed vs open — when to reach for which</h1>
+      <table class="moves">
+        <tr><td></td><td class="tool">Closed API (OpenAI/Gemini)</td><td class="tool">Open-source (transformers)</td></tr>
+        <tr><td class="tool">Setup</td><td>API key, 1 line</td><td>download weights, run infra</td></tr>
+        <tr><td class="tool">Best at</td><td>broad reasoning, generation, agents</td><td>one narrow task, at scale</td></tr>
+        <tr><td class="tool">Data</td><td>leaves your machine</td><td>stays local</td></tr>
+        <tr><td class="tool">Cost</td><td>per token</td><td>hardware up front</td></tr>
+      </table>
+      <p class="lead soft" style="margin-top:14px">Rule of thumb: <strong>prototype + reason</strong> on a closed API; <strong>a fixed, high-volume task</strong> (classify every ticket) is where a small local model pays off.</p>
+    </section>
+
+    <!-- 17 · Section 3 divider -->
+    <section class="slide section">
+      <span class="ghost">3</span>
+      <div class="secrow">
+        <div class="secnum">3</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>Your first LLM app</h1>
+          <div class="sub">prompt → structured output → <b>validate</b></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 18 · 3.1 Context window -->
+    <section class="slide">
+      <p class="eyebrow">3.1 · Context window + the prompt is the spec</p>
+      <h1 class="h">The prompt is the spec</h1>
+      <p class="lead">The model has <strong>no memory</strong> between calls — everything it knows for <em>this</em> call is the <strong>context window</strong> you send. Three parts carry 80% of the result:</p>
+      <div class="steps">
+        <div class="step"><span class="k">1</span><div><b>Role</b> — who the model is ("assistant for a product catalog")</div></div>
+        <div class="step"><span class="k">2</span><div><b>Constraints</b> — what it must / must not do</div></div>
+        <div class="step"><span class="k">3</span><div><b>Output shape</b> — JSON? prose? a single label?</div></div>
+      </div>
+      <pre class="code"><code class="py">SYSTEM_PROMPT = ("You convert catalog questions into a structured filter. "
+                 "Respond with JSON matching the schema; use null for unmentioned fields.")</code></pre>
+      <p class="lead soft" style="margin-top:10px">Skip the "you are a world-class expert" theatre — it buys nothing.</p>
+    </section>
+
+    <!-- 19 · 3.2 Structured output -->
+    <section class="slide">
+      <p class="eyebrow">3.2 · Structured output = the extract task, rigorously</p>
+      <h1 class="h">Structured output — Pydantic returns</h1>
+      <p class="lead">Make the answer <strong>machine-readable, not English you re-parse.</strong> Declare the shape as Pydantic (Day-2 returns), ask for JSON mode:</p>
+      <pre class="code"><code class="py">class CatalogQuery(BaseModel):
+    category: str | None = Field(None, description="Restrict to this category, or null for all.")
+    max_price: float | None = Field(None, ge=0)
+    in_stock_only: bool = False</code></pre>
+      <pre class="code" style="margin-top:14px"><code class="py">resp = client.chat.completions.create(model="gpt-4o-mini", messages=[...],
+    response_format={"type": "json_object"})   # JSON mode</code></pre>
+      <p class="lead soft" style="margin-top:14px"><code class="inl">Field(description=...)</code> is the spec the model reads. <strong>Make the LLM speak your schema.</strong></p>
+    </section>
+
+    <!-- 20 · 3.3 🔮 Predict -->
+    <section class="slide">
+      <p class="eyebrow">3.3 · 🔮 Predict</p>
+      <h1 class="h">What happens when the LLM returns <code class="inl">{"max_price": -5}</code>?</h1>
+      <div class="predict"><span class="q">🔮</span><div>Pause. The LLM filled every field — valid JSON, correct types. But <code class="inl">max_price</code> is <b>negative</b>.<br><br>Does your code catch this? Where?</div></div>
+    </section>
+
+    <!-- 21 · 3.4 Always validate -->
+    <section class="slide">
+      <p class="eyebrow">3.4 · Always validate the output</p>
+      <h1 class="h">Always validate the output</h1>
+      <p class="lead">The LLM <em>promised</em> JSON in your shape — don't take its word. Parse through Pydantic, exactly like a request body Day 2:</p>
+      <pre class="code"><code class="py">raw = resp.choices[0].message.content
+query = CatalogQuery.model_validate_json(raw)   # raises on bad shape AND bad values</code></pre>
+      <p class="lead" style="margin-top:18px"><code class="inl">Field(ge=0)</code> on <code class="inl">max_price</code> rejects <code class="inl">-5</code> — <strong>the same constraint you wrote 5 minutes ago.</strong> Pydantic is the guardrail for the LLM, not just the API.</p>
+      <p class="lead soft">Same <strong>boundary discipline</strong> as Day 2: the LLM is just another <strong>untrusted source</strong>. Validate at the edge; the rest of your code gets a clean, typed object.</p>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook: module-10 §3 — <b>extract a TicketQuery in JSON mode, then validate it. Try removing <code>ge=0</code> — watch what gets through.</b></div></div>
+    </section>
+
+    <!-- 22 · 3.5 Ladder -->
+    <section class="slide">
+      <p class="eyebrow">3.5 · When the output isn't good enough — the ladder</p>
+      <h1 class="h">Climb only as far as the task needs</h1>
+      <table class="moves">
+        <tr><td class="tool">Prompt</td><td>clearer role / constraints / examples — first thing, always</td></tr>
+        <tr><td class="tool">RAG</td><td>retrieve facts, inject as context — model lacks <em>your</em> knowledge</td></tr>
+        <tr><td class="tool">Fine-tune</td><td>retrain weights on labeled data — one narrow task, high volume, fixed format</td></tr>
+      </table>
+      <p class="lead soft" style="margin-top:14px">Most tasks never leave rung 1. Fine-tuning teaches a <strong>skill / format</strong>, not facts — and the held-out check it needs <strong>is the golden-eval you build in M12.</strong> <em>(Shown, not run today.)</em></p>
+    </section>
+
+    <!-- 23 · 3.6 Responsible AI -->
+    <section class="slide">
+      <p class="eyebrow">3.6 · Responsible AI — the minimum</p>
+      <h1 class="h">Responsible AI — the minimum</h1>
+      <ul class="clean">
+        <li><b>PII</b> — don't send personal data to a third-party LLM without consent + a DPA (this is also a reason to reach for §2's local models)</li>
+        <li><b>Hallucination</b> — the model can invent numbers; <strong>verify with a tool before acting</strong></li>
+        <li><b>Cost / runaway</b> — cap <code class="inl">max_steps</code> on every agent (M11), so a confused loop fails loudly</li>
+      </ul>
+      <p class="lead soft">Not a course on responsible AI — but your boss <em>will</em> ask these three.</p>
+    </section>
+
+    <!-- 24 · 3.7 Bridge to M11 -->
+    <section class="slide">
+      <p class="eyebrow">3.7 · → M11: the LLM becomes an agent</p>
+      <h1 class="h">→ M11: the LLM becomes an agent</h1>
+      <p class="lead">Today: <strong>one call</strong>, structured + validated. Next module: wrap it in a <strong>loop</strong> and give it <strong>tools</strong> (your <code class="inl">ProductCatalog</code>).</p>
+      <pre class="map">
+<b>§3 today</b>         one validated call:  text -> CatalogQuery
+<b>M11 next</b>         loop + tools:        question -> [pick tool -> run -> observe] -> answer</pre>
+      <p class="lead soft" style="margin-top:18px">The validation discipline you just learned is what keeps the loop trustworthy.</p>
+    </section>
+
+    <!-- 25 · LAB 10 -->
+    <section class="slide lab">
+      <span class="labtag">🧪 LAB 10 · 80 MIN</span>
+      <h1>Classify a Product, then NL → Filter</h1>
+      <p class="lead">Open <code class="inl">modules/m10-llm-structured/lab/README.md</code></p>
+      <p class="lead"><strong>Part A — open-source (≈20 min):</strong> zero-shot classify a <code class="inl">Product</code> from its name + description with a local <code class="inl">transformers</code> pipeline; compare the guess to the real category.</p>
+      <p class="lead"><strong>Part B — your first LLM app (≈60 min):</strong> on your <code class="inl">Product</code> catalog</p>
+      <ul class="clean">
+        <li><code class="inl">CatalogQuery</code> — Pydantic schema with <code class="inl">Field(description=...)</code></li>
+        <li><code class="inl">parse_nl_query(prompt)</code> — one LLM call, JSON mode, Pydantic validation</li>
+        <li><code class="inl">apply_query(query, catalog)</code> — pure-Python filter over the <code class="inl">ProductCatalog</code></li>
+      </ul>
+      <div class="endstate">End state: typing <b>"electronics under 5000 in stock"</b> returns the right rows.</div>
+    </section>
+
+  </div>
+</div>
+
+<div class="nav">
+  <button id="prev" aria-label="Previous slide">◀</button>
+  <span class="count" id="count">1 / 25</span>
+  <button id="next" aria-label="Next slide">▶</button>
+</div>
+<div class="hint">← → to navigate</div>
+
+<script>
+(function(){
+  "use strict";
+  const stage = document.querySelector('.stage');
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const N = slides.length;
+  const countEl = document.getElementById('count');
+
+  // add progress bar + footer to each slide
+  slides.forEach((s, k)=>{
+    const p = document.createElement('div'); p.className='prog';
+    const f = document.createElement('div'); f.className='foot';
+    f.innerHTML = '<span class="brand"><span class="dot"></span>Acuity · Day 4 · Module 10 — The Power of LLMs</span>'
+                + '<span>'+String(k+1).padStart(2,'0')+' / '+String(N).padStart(2,'0')+'</span>';
+    s.appendChild(p); s.appendChild(f);
+    p.style.width = ((k+1)/N*100)+'%';
+  });
+
+  // ---- fit stage to viewport ----
+  function fit(){
+    const pad = 24;
+    const s = Math.min((window.innerWidth-pad*2)/1280, (window.innerHeight-pad*2-40)/720);
+    stage.style.transform = 'translate(-50%,-50%) scale('+s+')';
+  }
+  window.addEventListener('resize', fit); fit();
+
+  // ---- navigation ----
+  let i = 0;
+  function show(n){
+    i = Math.max(0, Math.min(N-1, n));
+    slides.forEach((s,k)=>s.classList.toggle('active', k===i));
+    countEl.textContent = (i+1)+' / '+N;
+    location.hash = i+1;
+  }
+  function next(){ show(i+1); }
+  function prev(){ show(i-1); }
+
+  document.getElementById('next').addEventListener('click', next);
+  document.getElementById('prev').addEventListener('click', prev);
+  window.addEventListener('keydown', e=>{
+    if(['ArrowRight','PageDown',' '].includes(e.key)){ e.preventDefault(); next(); }
+    else if(['ArrowLeft','PageUp'].includes(e.key)){ e.preventDefault(); prev(); }
+    else if(e.key==='Home'){ e.preventDefault(); show(0); }
+    else if(e.key==='End'){ e.preventDefault(); show(N-1); }
+  });
+  const start = parseInt(location.hash.replace('#',''),10);
+  if(start>=1 && start<=N) i = start-1;
+
+  // ---- minimal Python syntax highlighter (self-contained, CSP-safe) ----
+  const KW = new Set(['def','return','if','elif','else','for','while','in','not','and','or',
+    'import','from','as','try','except','finally','raise','with','class','lambda','pass',
+    'break','continue','is','yield','global','nonlocal','assert','del','await','async']);
+  const CON = new Set(['True','False','None']);
+  const BI = new Set(['print','type','len','sum','range','enumerate','isinstance','open','list',
+    'dict','set','tuple','int','float','str','bool','round','dir','sorted','map','filter','zip',
+    'LookupError','ValueError','KeyError','TypeError',
+    'pipeline','BaseModel','Field']);
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const TOK = /(#.*$)|((?:[fFrRbB]{0,2})(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'))|(\b\d+\.?\d*\b)|([A-Za-z_]\w*)/gm;
+
+  document.querySelectorAll('pre.code code').forEach(block=>{
+    const src = block.textContent;
+    let out='', last=0, m;
+    TOK.lastIndex = 0;
+    while((m = TOK.exec(src))){
+      out += esc(src.slice(last, m.index));
+      if(m[1])       out += '<span class="t-com">'+esc(m[1])+'</span>';
+      else if(m[2])  out += '<span class="t-str">'+esc(m[2])+'</span>';
+      else if(m[3])  out += '<span class="t-num">'+esc(m[3])+'</span>';
+      else if(m[4]){
+        const w = m[4];
+        const cls = KW.has(w)?'t-kw':CON.has(w)?'t-con':BI.has(w)?'t-bi':null;
+        out += cls ? '<span class="'+cls+'">'+esc(w)+'</span>' : esc(w);
+      }
+      last = m.index + m[0].length;
+    }
+    out += esc(src.slice(last));
+    block.innerHTML = out;
+  });
+
+  show(i);
+})();
+</script>

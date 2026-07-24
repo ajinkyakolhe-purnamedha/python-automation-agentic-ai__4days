@@ -1,25 +1,30 @@
 """LLM-powered Catalog Agent (Day 4) — Lab 11 SOLUTION (answer key).
 
-The reference answer for `starter/catalog/agent.py`: the three CatalogAgent
-methods are filled in —
+The reference answer for ``starter/catalog/agent.py``: the four
+``@catalog_agent.tool`` function bodies are filled in.
 
-  * `_build_registry`  — registers the FOUR tools over the Day-2 APIClient
-  * `ask`              — the plan → act → observe loop, with tool_call_id chaining
-  * `_invoke_tool`     — looks up + runs one tool, returns result or {"error": ...}
+Built with **Pydantic AI** — schema auto-derived from type hints +
+docstrings, no hand-written JSON dicts. ``RunContext[APIClient]``
+injects the Day-2 API client (the Day-3 mock seam).
 
-Everything else (CatalogQuery + parse_nl_query + apply_query from Lab 10, and
-the ToolSpec/ToolRegistry plumbing) matches the starter. Uses the OpenAI API
-(set OPENAI_API_KEY).
+Usage::
+
+    from catalog.agent import catalog_agent
+    from catalog.client import APIClient
+
+    result = catalog_agent.run_sync(
+        "What's our most expensive product?", deps=APIClient()
+    )
+    print(result.output)
 """
 
 from __future__ import annotations
 
-import json
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Callable, Optional, Protocol
+from typing import Optional
 
 from pydantic import BaseModel, Field, ValidationError
+from pydantic_ai import Agent, RunContext
 
 from .client import APIClient
 
@@ -52,263 +57,47 @@ class CatalogQuery(BaseModel):
 
 
 # ============================================================
-# Tool registration (GIVEN — this is plumbing, not the lesson)
-# ============================================================
-
-@dataclass
-class ToolSpec:
-    name: str
-    description: str
-    parameters_schema: dict
-    fn: Callable[..., Any]
-
-    def to_openai_schema(self) -> dict:
-        return {
-            "type": "function",
-            "function": {
-                "name": self.name,
-                "description": self.description,
-                "parameters": self.parameters_schema,
-            },
-        }
-
-
-class ToolRegistry:
-    """Collects ToolSpecs declared with `@registry.tool(...)`."""
-
-    def __init__(self) -> None:
-        self._tools: dict[str, ToolSpec] = {}
-
-    def tool(self, *, name: str, description: str, parameters: dict):
-        def decorator(fn: Callable[..., Any]) -> Callable[..., Any]:
-            self._tools[name] = ToolSpec(
-                name=name,
-                description=description,
-                parameters_schema=parameters,
-                fn=fn,
-            )
-            return fn
-        return decorator
-
-    def get(self, name: str) -> ToolSpec:
-        if name not in self._tools:
-            raise KeyError(f"tool {name!r} not registered")
-        return self._tools[name]
-
-    def all(self) -> list[ToolSpec]:
-        return list(self._tools.values())
-
-    def openai_schemas(self) -> list[dict]:
-        return [t.to_openai_schema() for t in self._tools.values()]
-
-
-# ============================================================
-# LLM client protocol (so tests can pass any duck-typed mock)
-# ============================================================
-
-class LLMClient(Protocol):
-    """Minimal slice of the OpenAI client interface this agent needs."""
-    chat: Any
-
-
-def default_openai_client() -> LLMClient:
-    """Construct a real OpenAI client. Requires OPENAI_API_KEY in env."""
-    from openai import OpenAI  # local import — only needed when we run real
-    return OpenAI()
-
-
-# ============================================================
-# Agent result objects (GIVEN)
-# ============================================================
-
-class AgentError(Exception):
-    """Raised when the agent loop hits a hard failure (max steps, bad tool name…)."""
-
-
-@dataclass
-class ToolCallRecord:
-    tool: str
-    arguments: dict
-    result: Any
-
-
-@dataclass
-class AgentResult:
-    answer: str
-    tool_calls: list[ToolCallRecord] = field(default_factory=list)
-    steps: int = 0
-
-
-# ============================================================
-# CatalogAgent — the three marked methods, FILLED IN
+# The Catalog Agent — Pydantic AI
 # ============================================================
 
 SYSTEM_PROMPT = (
     "You are a helpful assistant for a small product catalog. "
-    "You have access to tools that let you list, search, count, add, and "
+    "You have access to tools that let you list, search, count, and "
     "update products. Use them to answer the user's question. "
     "Prefer a single accurate tool call over multiple speculative ones. "
     "When you have enough information, respond in plain language."
 )
 
-
-class CatalogAgent:
-    def __init__(
-        self,
-        api_client: APIClient,
-        llm_client: Optional[LLMClient] = None,
-        *,
-        model: str = "gpt-4o-mini",
-        max_steps: int = 5,
-    ) -> None:
-        self.api = api_client
-        self.llm = llm_client or default_openai_client()
-        self.model = model
-        self.max_steps = max_steps
-        self.registry = self._build_registry()
-
-    # -------- tool implementations (each is just Python on top of APIClient) --------
-
-    def _build_registry(self) -> ToolRegistry:
-        registry = ToolRegistry()
-
-        @registry.tool(
-            name="list_products",
-            description="Return every product in the catalog as a list of dicts.",
-            parameters={"type": "object", "properties": {}, "additionalProperties": False},
-        )
-        def list_products() -> list[dict]:
-            return [p.model_dump() for p in self.api.list_products()]
-
-        @registry.tool(
-            name="search_products",
-            description="Find products whose name contains the given substring (case-insensitive).",
-            parameters={
-                "type": "object",
-                "properties": {
-                    "term": {"type": "string", "description": "Substring to search for."},
-                },
-                "required": ["term"],
-                "additionalProperties": False,
-            },
-        )
-        def search_products(term: str) -> list[dict]:
-            term_lower = term.lower()
-            return [
-                p.model_dump() for p in self.api.list_products()
-                if term_lower in p.name.lower()
-            ]
-
-        @registry.tool(
-            name="count_by_category",
-            description="Return a dict mapping each category to its product count.",
-            parameters={"type": "object", "properties": {}, "additionalProperties": False},
-        )
-        def count_by_category() -> dict[str, int]:
-            return self.api.count_by_category()
-
-        @registry.tool(
-            name="update_price",
-            description="Set a product's price. Returns the updated product.",
-            parameters={
-                "type": "object",
-                "properties": {
-                    "product_id": {"type": "integer"},
-                    "new_price": {"type": "number", "minimum": 0},
-                },
-                "required": ["product_id", "new_price"],
-                "additionalProperties": False,
-            },
-        )
-        def update_price(product_id: int, new_price: float) -> dict:
-            from .models import ProductUpdate
-            return self.api.update_product(
-                product_id, ProductUpdate(price=new_price)
-            ).model_dump()
-
-        return registry
-
-    # -------- the loop --------
-
-    def ask(self, user_prompt: str) -> AgentResult:
-        messages: list[dict] = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt},
-        ]
-        tool_call_log: list[ToolCallRecord] = []
-
-        for step in range(1, self.max_steps + 1):
-            response = self.llm.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                tools=self.registry.openai_schemas(),
-            )
-            msg = response.choices[0].message
-            tool_calls = getattr(msg, "tool_calls", None) or []
-
-            if not tool_calls:                         # LLM answered → done
-                return AgentResult(
-                    answer=(msg.content or "").strip(),
-                    tool_calls=tool_call_log,
-                    steps=step,
-                )
-
-            # 1) append the ASSISTANT message *with* its tool_calls so the
-            #    tool replies below chain correctly …
-            messages.append({
-                "role": "assistant",
-                "content": msg.content,
-                "tool_calls": [
-                    {
-                        "id": tc.id,
-                        "type": "function",
-                        "function": {
-                            "name": tc.function.name,
-                            "arguments": tc.function.arguments,
-                        },
-                    }
-                    for tc in tool_calls
-                ],
-            })
-
-            # 2) … then ONE tool message per call, echoing that call's id.
-            for call in tool_calls:
-                result = self._invoke_tool(call.function.name, call.function.arguments)
-                tool_call_log.append(ToolCallRecord(
-                    tool=call.function.name,
-                    arguments=_parse_args(call.function.arguments),
-                    result=result,
-                ))
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": call.id,            # ← MUST match the assistant call
-                    "name": call.function.name,
-                    "content": json.dumps(result, default=str),
-                })
-
-        raise AgentError(f"agent did not converge in {self.max_steps} steps")
-
-    def _invoke_tool(self, name: str, arguments_json: str) -> Any:
-        try:
-            spec = self.registry.get(name)
-        except KeyError:
-            logger.warning("LLM requested unknown tool: %s", name)
-            return {"error": f"unknown tool: {name!r}"}   # don't raise — let the LLM recover
-        kwargs = _parse_args(arguments_json)
-        try:
-            return spec.fn(**kwargs)
-        except Exception as exc:
-            logger.warning("tool %s raised %s", name, exc)
-            return {"error": f"{type(exc).__name__}: {exc}"}
+catalog_agent = Agent(
+    deps_type=APIClient,
+    instructions=SYSTEM_PROMPT,
+)
 
 
-def _parse_args(arguments_json: str) -> dict:
-    if not arguments_json:
-        return {}
-    try:
-        return json.loads(arguments_json)
-    except json.JSONDecodeError:
-        return {}
+@catalog_agent.tool
+def list_products(ctx: RunContext[APIClient]) -> list[dict]:
+    """Return every product in the catalog."""
+    return [p.model_dump() for p in ctx.deps.list_products()]
+
+
+@catalog_agent.tool
+def search_products(ctx: RunContext[APIClient], term: str) -> list[dict]:
+    """Find products whose name contains the given substring (case-insensitive)."""
+    return [p.model_dump() for p in ctx.deps.list_products()
+            if term.lower() in p.name.lower()]
+
+
+@catalog_agent.tool
+def count_by_category(ctx: RunContext[APIClient]) -> dict[str, int]:
+    """Return a dict mapping each category to its product count."""
+    return ctx.deps.count_by_category()
+
+
+@catalog_agent.tool
+def update_price(ctx: RunContext[APIClient], product_id: int, new_price: float) -> dict:
+    """Set a product's price. Returns the updated product."""
+    from .models import ProductUpdate
+    return ctx.deps.update_product(product_id, ProductUpdate(price=new_price)).model_dump()
 
 
 # ============================================================
@@ -322,11 +111,13 @@ NL_QUERY_SYSTEM = (
 )
 
 
-def parse_nl_query(prompt: str, llm_client: Optional[LLMClient] = None,
+def parse_nl_query(prompt: str, llm_client=None,
                    *, model: str = "gpt-4o-mini") -> CatalogQuery:
     """Lab 10: convert a free-form question into a validated CatalogQuery."""
-    client = llm_client or default_openai_client()
-    response = client.chat.completions.create(
+    if llm_client is None:
+        from openai import OpenAI
+        llm_client = OpenAI()
+    response = llm_client.chat.completions.create(
         model=model,
         messages=[
             {"role": "system", "content": NL_QUERY_SYSTEM},

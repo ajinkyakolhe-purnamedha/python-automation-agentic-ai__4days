@@ -1,0 +1,650 @@
+<meta charset="utf-8">
+<title>Module 11 · Building LLM Applications — Acuity Day 4</title>
+<style>
+  :root{
+    --bg:#E7EAF1; --bg2:#EFF1F7; --slide:#FFFFFF; --ink:#131A24; --ink-soft:#586477;
+    --line:#E4E8EF; --accent:#3A54D8; --accent2:#0FA9A0; --accent-soft:#EBEEFC; --accent-line:#CBD5F7;
+    --code-bg:#F6F8FC; --code-line:#E6EBF3; --code-head:#EEF2F9;
+    --grid:rgba(58,84,216,.055); --glow:rgba(58,84,216,.10); --glow2:rgba(15,169,160,.08);
+    --sy-com:#8A97A6; --sy-str:#0A7D55; --sy-num:#B87503; --sy-kw:#8250DF; --sy-con:#0550AE; --sy-bi:#0F63C4;
+    --good:#1E874B; --bad:#C23B47;
+    --shadow:0 30px 70px -26px rgba(19,26,36,.32), 0 4px 14px -6px rgba(19,26,36,.16);
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","Menlo","Cascadia Code","Roboto Mono",monospace;
+    --grad:linear-gradient(102deg,var(--accent) 0%,var(--accent2) 118%);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#080B11; --bg2:#0E131B; --slide:#151C26; --ink:#EAEEF5; --ink-soft:#98A6B8;
+      --line:#26313F; --accent:#8098FF; --accent2:#3FD6C8; --accent-soft:#1B2540; --accent-line:#2E3C64;
+      --code-bg:#0E141D; --code-line:#232F3D; --code-head:#131B26;
+      --grid:rgba(128,152,255,.07); --glow:rgba(128,152,255,.14); --glow2:rgba(63,214,200,.10);
+      --sy-com:#5E6B7A; --sy-str:#7EE0A8; --sy-num:#F0B37E; --sy-kw:#C792EA; --sy-con:#79B8FF; --sy-bi:#8AC7FF;
+      --good:#57C98B; --bad:#F0808C;
+      --shadow:0 34px 80px -26px rgba(0,0,0,.75), 0 4px 14px -6px rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#E7EAF1; --bg2:#EFF1F7; --slide:#FFFFFF; --ink:#131A24; --ink-soft:#586477;
+    --line:#E4E8EF; --accent:#3A54D8; --accent2:#0FA9A0; --accent-soft:#EBEEFC; --accent-line:#CBD5F7;
+    --code-bg:#F6F8FC; --code-line:#E6EBF3; --code-head:#EEF2F9;
+    --grid:rgba(58,84,216,.055); --glow:rgba(58,84,216,.10); --glow2:rgba(15,169,160,.08);
+    --sy-com:#8A97A6; --sy-str:#0A7D55; --sy-num:#B87503; --sy-kw:#8250DF; --sy-con:#0550AE; --sy-bi:#0F63C4;
+    --good:#1E874B; --bad:#C23B47;
+    --shadow:0 30px 70px -26px rgba(19,26,36,.32), 0 4px 14px -6px rgba(19,26,36,.16);
+  }
+  :root[data-theme="dark"]{
+    --bg:#080B11; --bg2:#0E131B; --slide:#151C26; --ink:#EAEEF5; --ink-soft:#98A6B8;
+    --line:#26313F; --accent:#8098FF; --accent2:#3FD6C8; --accent-soft:#1B2540; --accent-line:#2E3C64;
+    --code-bg:#0E141D; --code-line:#232F3D; --code-head:#131B26;
+    --grid:rgba(128,152,255,.07); --glow:rgba(128,152,255,.14); --glow2:rgba(63,214,200,.10);
+    --sy-com:#5E6B7A; --sy-str:#7EE0A8; --sy-num:#F0B37E; --sy-kw:#C792EA; --sy-con:#79B8FF; --sy-bi:#8AC7FF;
+    --good:#57C98B; --bad:#F0808C;
+    --shadow:0 34px 80px -26px rgba(0,0,0,.75), 0 4px 14px -6px rgba(0,0,0,.55);
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;color:var(--ink);font-family:var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased;
+       background:
+         radial-gradient(60% 55% at 12% 8%, var(--glow) 0%, transparent 60%),
+         radial-gradient(55% 50% at 92% 96%, var(--glow2) 0%, transparent 60%),
+         linear-gradient(160deg,var(--bg) 0%,var(--bg2) 100%);}
+
+  /* ---- scaled stage ---- */
+  #viewport{position:fixed;inset:0}
+  .stage{position:absolute;top:50%;left:50%;width:1280px;height:720px;transform-origin:center center}
+  .slide{position:absolute;inset:0;background:var(--slide);border:1px solid var(--line);border-radius:18px;
+         box-shadow:var(--shadow);padding:60px 68px 56px;display:none;flex-direction:column;overflow:hidden}
+  .slide.active{display:flex}
+  .slide::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:34px 34px;-webkit-mask-image:radial-gradient(80% 70% at 80% 0%,#000 0%,transparent 72%);
+            mask-image:radial-gradient(80% 70% at 80% 0%,#000 0%,transparent 72%);opacity:.9}
+  .slide::after{content:"";position:absolute;top:0;left:0;right:0;height:5px;border-radius:18px 18px 0 0;
+    background:var(--grad);z-index:2;opacity:.95}
+  .slide > *{position:relative;z-index:1}
+
+  @media (prefers-reduced-motion:no-preference){
+    .slide.active > *:not(.prog):not(.foot){animation:rise .5s both cubic-bezier(.2,.72,.2,1)}
+    .slide.active > *:nth-child(1){animation-delay:.03s}
+    .slide.active > *:nth-child(2){animation-delay:.09s}
+    .slide.active > *:nth-child(3){animation-delay:.15s}
+    .slide.active > *:nth-child(4){animation-delay:.21s}
+    .slide.active > *:nth-child(5){animation-delay:.27s}
+    .slide.active > *:nth-child(6){animation-delay:.33s}
+    @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  }
+
+  .prog{position:absolute;top:0;left:0;height:5px;background:var(--grad);border-radius:18px 0 0 0;
+        z-index:3;box-shadow:0 0 12px var(--glow);transition:width .4s cubic-bezier(.4,.7,.2,1)}
+  .foot{position:absolute;left:68px;right:68px;bottom:22px;display:flex;justify-content:space-between;align-items:center;
+        font-size:12.5px;color:var(--ink-soft);font-family:var(--mono);letter-spacing:.05em;z-index:2}
+  .foot .brand{display:flex;align-items:center;gap:9px}
+  .foot .dot{width:7px;height:7px;border-radius:2px;background:var(--grad);transform:rotate(45deg)}
+
+  .eyebrow{display:inline-flex;align-items:center;gap:11px;font-family:var(--mono);font-size:13.5px;letter-spacing:.17em;
+           text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 0 22px}
+  .eyebrow::before{content:"";width:22px;height:2px;border-radius:2px;background:var(--grad)}
+  h1.h{font-size:41px;line-height:1.1;font-weight:800;letter-spacing:-.022em;margin:0 0 18px;text-wrap:balance;position:relative;padding-bottom:14px}
+  h1.h::after{content:"";position:absolute;left:0;bottom:0;width:56px;height:4px;border-radius:3px;background:var(--grad)}
+  .lead{font-size:22px;line-height:1.5;color:var(--ink);margin:0 0 24px;max-width:60ch;font-weight:400}
+  .lead.soft{color:var(--ink-soft)}
+  strong{font-weight:700}
+  .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .num{color:var(--good)} .no{color:var(--bad)}
+  code.inl{font-family:var(--mono);font-size:.88em;background:var(--accent-soft);color:var(--accent);
+           padding:.1em .4em;border-radius:6px;font-weight:600;white-space:nowrap;border:1px solid var(--accent-line)}
+
+  pre.code{margin:0;background:var(--code-bg);border:1px solid var(--code-line);border-radius:13px;
+           padding:44px 26px 22px;overflow-x:auto;position:relative;
+           box-shadow:0 18px 40px -24px rgba(19,26,36,.4), inset 0 1px 0 rgba(255,255,255,.35)}
+  pre.code::before{content:"";position:absolute;top:0;left:0;right:0;height:34px;background:var(--code-head);
+           border-bottom:1px solid var(--code-line);border-radius:13px 13px 0 0}
+  pre.code::after{content:"● python";position:absolute;top:9px;left:16px;font-family:var(--mono);font-size:12px;
+           letter-spacing:.06em;color:var(--ink-soft);font-weight:600;z-index:1}
+  pre.code[data-lang="bash"]::after{content:"● bash"}
+  pre.code[data-lang="json"]::after{content:"● json"}
+  pre.code[data-lang="text"]::after{content:"● text"}
+  pre.code[data-lang="yaml"]::after{content:"● yaml"}
+  pre.code code{font-family:var(--mono);font-size:20px;line-height:1.62;color:var(--ink);display:block;white-space:pre;position:relative;z-index:1}
+  .t-com{color:var(--sy-com);font-style:italic} .t-str{color:var(--sy-str)} .t-num{color:var(--sy-num)}
+  .t-kw{color:var(--sy-kw);font-weight:600} .t-con{color:var(--sy-con);font-weight:600} .t-bi{color:var(--sy-bi)}
+
+  .along{margin-top:auto;display:flex;align-items:center;gap:15px;
+         background:linear-gradient(100deg,var(--accent-soft),transparent 90%);
+         border:1px solid var(--accent-line);border-radius:12px;padding:15px 20px;font-size:17px;color:var(--ink);
+         box-shadow:0 10px 30px -20px var(--glow)}
+  .along .play{flex:none;width:34px;height:34px;border-radius:9px;background:var(--grad);color:#fff;
+         display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;box-shadow:0 6px 16px -6px var(--glow)}
+  .along code{font-family:var(--mono);font-size:.92em;color:var(--accent);font-weight:600}
+  .along b{font-weight:700}
+
+  .predict{display:flex;align-items:center;gap:13px;margin:0 0 6px;
+         background:linear-gradient(100deg,rgba(15,169,160,.12),transparent 92%);
+         border:1px solid var(--accent2);border-radius:12px;padding:12px 18px;font-size:18px;color:var(--ink)}
+  .predict .q{flex:none;width:30px;height:30px;border-radius:8px;
+         background:linear-gradient(120deg,var(--accent2),var(--accent));color:#fff;
+         display:flex;align-items:center;justify-content:center;font-size:15px}
+  .predict b{font-weight:700;color:var(--accent2)}
+
+  .steps{display:flex;flex-direction:column;gap:13px;margin:2px 0 24px}
+  .step{display:flex;gap:16px;align-items:center;font-size:20px;line-height:1.35;background:var(--code-bg);
+        border:1px solid var(--code-line);border-radius:12px;padding:14px 18px}
+  .step .k{font-family:var(--mono);font-size:13px;font-weight:700;color:#fff;background:var(--grad);
+           padding:5px 11px;border-radius:7px;white-space:nowrap;letter-spacing:.04em}
+  .step b{font-weight:700}
+
+  ul.clean{list-style:none;margin:0 0 22px;padding:0;display:flex;flex-direction:column;gap:14px}
+  ul.clean li{font-size:21px;line-height:1.45;padding-left:30px;position:relative;color:var(--ink)}
+  ul.clean li::before{content:"";position:absolute;left:0;top:.48em;width:11px;height:11px;border-radius:3px;
+           background:var(--grad);transform:rotate(45deg);box-shadow:0 3px 8px -3px var(--glow)}
+  ul.clean li b{font-weight:700}
+
+  pre.map{margin:0;background:var(--code-bg);border:1px solid var(--code-line);border-radius:13px;padding:26px 30px;
+          font-family:var(--mono);font-size:20px;line-height:1.85;color:var(--ink);overflow-x:auto;
+          box-shadow:0 18px 40px -26px rgba(19,26,36,.4)}
+  pre.map b{color:var(--accent);font-weight:700}
+
+  table.moves{border-collapse:separate;border-spacing:0 0;width:100%;font-size:20px}
+  table.moves td{padding:15px 16px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.moves tr:last-child td{border-bottom:none}
+  table.moves td.tool{font-family:var(--mono);color:var(--accent);white-space:nowrap;width:46%;font-weight:600}
+  table.moves td.tool .no{color:var(--bad)}
+
+  .grow{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center}
+
+  .slide.title{justify-content:center;padding:60px 76px}
+  .slide.title::before{-webkit-mask-image:radial-gradient(90% 90% at 85% 12%,#000,transparent 72%);
+            mask-image:radial-gradient(90% 90% at 85% 12%,#000,transparent 72%);opacity:1}
+  .tglow{position:absolute;width:620px;height:620px;right:-120px;top:-160px;border-radius:50%;z-index:0;
+         background:radial-gradient(circle,var(--glow) 0%,transparent 62%);pointer-events:none}
+  .kicker{display:inline-flex;align-items:center;gap:12px;font-family:var(--mono);font-size:14px;letter-spacing:.24em;
+          text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 0 22px}
+  .kicker::before{content:"";width:30px;height:2px;background:var(--grad);border-radius:2px}
+  .slide.title h1{font-size:92px;line-height:.94;font-weight:800;letter-spacing:-.035em;margin:0 0 14px}
+  .slide.title h2{font-size:38px;font-weight:500;color:var(--ink-soft);margin:0;letter-spacing:-.012em;max-width:22ch;line-height:1.15}
+  .slide.title h2 b{color:var(--ink);font-weight:800}
+  .metaline{margin-top:38px;display:inline-flex;align-items:center;gap:14px;font-family:var(--mono);font-size:17px;
+            color:var(--ink-soft);letter-spacing:.02em;background:var(--code-bg);border:1px solid var(--code-line);
+            padding:12px 20px;border-radius:11px}
+  .metaline b{color:var(--accent);font-weight:700}
+
+  .slide.section{justify-content:center;overflow:hidden}
+  .ghost{position:absolute;right:-30px;bottom:-140px;font-size:520px;font-weight:800;line-height:.7;z-index:0;
+          letter-spacing:-.05em;font-variant-numeric:tabular-nums;color:transparent;
+          -webkit-text-stroke:2px var(--accent-line);opacity:.55;pointer-events:none;user-select:none}
+  .secrow{display:flex;align-items:center;gap:34px}
+  .secnum{font-size:132px;font-weight:800;line-height:.8;letter-spacing:-.04em;font-variant-numeric:tabular-nums;
+          background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;
+          flex:none;filter:drop-shadow(0 12px 24px var(--glow))}
+  .secdiv{width:2px;align-self:stretch;background:var(--grad);border-radius:2px;opacity:.5;margin:6px 0}
+  .secmeta .eyebrow{margin-bottom:14px}
+  .secmeta h1{font-size:58px;font-weight:800;letter-spacing:-.028em;margin:0;line-height:1.02}
+  .secmeta .sub{margin-top:20px;font-size:19px;color:var(--ink-soft);font-family:var(--mono);letter-spacing:.02em;max-width:52ch;line-height:1.7}
+  .secmeta .sub b{color:var(--ink)}
+
+  .slide.lab::before{opacity:1;-webkit-mask-image:radial-gradient(90% 80% at 12% 6%,#000,transparent 70%);
+            mask-image:radial-gradient(90% 80% at 12% 6%,#000,transparent 70%)}
+  .labtag{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:14px;font-weight:700;
+          color:#fff;letter-spacing:.08em;background:var(--grad);padding:8px 16px;border-radius:999px;margin:0 0 22px;
+          box-shadow:0 10px 24px -10px var(--glow)}
+  .slide.lab h1{font-size:48px;font-weight:800;letter-spacing:-.022em;margin:0 0 12px}
+  .endstate{margin-top:auto;background:var(--code-bg);border:1px solid var(--code-line);border-left:4px solid var(--accent);
+            border-radius:12px;padding:17px 22px;font-family:var(--mono);font-size:18px;color:var(--ink);
+            box-shadow:0 14px 34px -22px rgba(19,26,36,.4)}
+  .endstate b{color:var(--good);font-weight:700}
+
+  .nav{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:6px;z-index:20;
+       background:var(--slide);border:1px solid var(--line);border-radius:14px;padding:6px;
+       box-shadow:0 12px 30px -12px rgba(0,0,0,.4)}
+  .nav button{font-family:var(--mono);font-size:15px;border:none;background:transparent;color:var(--ink);
+              width:38px;height:38px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+              transition:background .14s,color .14s}
+  .nav button:hover{background:var(--accent-soft);color:var(--accent)}
+  .nav button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .nav .count{font-family:var(--mono);font-size:13.5px;color:var(--ink-soft);min-width:66px;text-align:center;font-variant-numeric:tabular-nums}
+  .hint{position:fixed;bottom:22px;right:20px;font-family:var(--mono);font-size:12px;color:var(--ink-soft);opacity:.55;z-index:20}
+</style>
+
+<div id="viewport">
+  <div class="stage">
+
+    <!-- 1 · TITLE -->
+    <section class="slide title active">
+      <span class="tglow"></span>
+      <p class="kicker">Acuity Training · Day 4</p>
+      <h1><span class="grad">Module 11</span></h1>
+      <h2>Building LLM Applications</h2>
+      <p class="metaline"><b>~40 min</b> · then 80 min lab — the two directions of the code↔LLM seam</p>
+    </section>
+
+    <!-- 2 · Module 11 — two directions -->
+    <section class="slide">
+      <p class="eyebrow">Module 11 · Overview</p>
+      <h1 class="h">Two directions of one seam</h1>
+      <div class="steps">
+        <div class="step"><span class="k">Code → LLM</span><div>Your Python produces raw data; the LLM <b>synthesizes</b> the answer (delete the parsing code)</div></div>
+        <div class="step"><span class="k">LLM → Code</span><div><b>Tool calling</b>: the LLM decides which of your functions to run</div></div>
+      </div>
+      <p class="lead soft">Direction 1 is the agent loop's <code class="inl">observe</code> step, taught on its own first. Then we close the loop.</p>
+    </section>
+
+    <!-- 3 · Section 1 divider -->
+    <section class="slide section">
+      <span class="ghost">1</span>
+      <div class="secrow">
+        <div class="secnum">1</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>The LLM processes your code's output</h1>
+          <div class="sub">code → LLM · <b>synthesis instead of parsing</b></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 · 1.1 -->
+    <section class="slide">
+      <p class="eyebrow">1.1 · Stop writing output-processing code</p>
+      <h1 class="h">Hand the raw data to the LLM</h1>
+      <p class="lead">Your Python pulls raw data from several places. The old way: write merge + parse + format + branch code. <strong>The new way:</strong> hand the raw output to the LLM and ask for the answer.</p>
+      <pre class="code"><code class="py">raw = [t.__dict__ for t in tickets]          # output returned by your code
+answer = llm.chat.completions.create(model="gpt-4o-mini",
+    messages=[{"role": "user", "content": f"What should on-call look at first?\n{raw}"}]
+).choices[0].message.content</code></pre>
+      <p class="lead soft" style="margin-top:16px">The LLM <strong>is</strong> the processing layer — no parsing code.</p>
+    </section>
+
+    <!-- 5 · 1.2 -->
+    <section class="slide">
+      <p class="eyebrow">1.2 · The code you stop writing</p>
+      <h1 class="h">7 lines of logic → 1 question</h1>
+      <pre class="code"><code class="py"># WITHOUT the LLM — you write the merge/parse/format yourself:
+products = catalog.list_all()
+by_cat = {}
+for p in products:
+    by_cat.setdefault(p.category, []).append(p)
+most_exp = max(products, key=lambda p: p.price)
+answer = f"Most expensive: {most_exp.name} (₹{most_exp.price}).\n"
+answer += "\n".join(f"{cat}: {len(ps)} items" for cat, ps in by_cat.items())</code></pre>
+      <pre class="code" style="margin-top:14px"><code class="py"># WITH the LLM — hand it the data and ask:
+products = [p.model_dump() for p in catalog.list_all()]
+answer = llm.chat.completions.create(model="gpt-4o-mini", messages=[
+    {"role": "user",
+     "content": f"Most expensive product? Summarize by category.\n{products}"}
+]).choices[0].message.content</code></pre>
+    </section>
+
+    <!-- 6 · 1.3 -->
+    <section class="slide">
+      <p class="eyebrow">1.3 · Free-text is for humans, structure is for code</p>
+      <h1 class="h">When code needs the result, ask for a shape</h1>
+      <p class="lead">A prose answer is great for a person. When the <em>next line of code</em> needs the result, ask the LLM to fill a shape — and validate it, exactly like M10 §3.</p>
+      <pre class="code"><code class="py">class TicketDigest(BaseModel):
+    open_count: int
+    top_priority: str
+    headline: str
+
+digest = TicketDigest.model_validate_json(raw_json)   # untrusted output → typed</code></pre>
+      <p class="lead soft" style="margin-top:14px">Same boundary discipline as Day 2 — now on the LLM's synthesis of <em>your</em> data.</p>
+    </section>
+
+    <!-- 7 · 1.4 -->
+    <section class="slide">
+      <p class="eyebrow">1.4 · Two sources, one answer</p>
+      <h1 class="h">Synthesis across multiple data sources</h1>
+      <pre class="code"><code class="py">products = catalog.list_all()
+groups   = catalog.group_by_category()
+counts   = {cat: len(ps) for cat, ps in groups.items()}
+
+answer = llm.chat.completions.create(model="gpt-4o-mini", messages=[
+    {"role": "system", "content": "You are a catalog analyst."},
+    {"role": "user",   "content": f"Compare inventory:\n{counts}\n\nProducts:\n{products}"}
+]).choices[0].message.content
+# → "Electronics leads with 3 products. Fitness has 1, currently out of stock."</code></pre>
+      <p class="lead soft" style="margin-top:14px">No merge logic, no string templates. The LLM handles the reasoning — your code supplies the data. This is what the agent's <strong>observe</strong> step does, every iteration.</p>
+    </section>
+
+    <!-- 8 · 1.5 -->
+    <section class="slide">
+      <p class="eyebrow">1.5 · This is the agent's observe step</p>
+      <h1 class="h">§1 is half of an agent</h1>
+      <pre class="map">
+<b>§1</b>        code output → LLM → answer                           (one shot)
+<b>agent</b>     [ LLM picks a tool → run it → feed result back ] → answer   (a loop)</pre>
+      <p class="lead" style="margin-top:22px">§1 is half of an agent: the LLM digesting a result. §2 adds the other half — the LLM choosing <em>which</em> of your functions to run. Same synthesis, now inside a loop.</p>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook: <b>module-11 §1</b> — synthesize raw tickets free-text, then as a validated <code>TicketDigest</code></div></div>
+    </section>
+
+    <!-- 9 · Section 2 divider -->
+    <section class="slide section">
+      <span class="ghost">2</span>
+      <div class="secrow">
+        <div class="secnum">2</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>Tools and the agent loop</h1>
+          <div class="sub">LLM → code · <b>plan → act → observe</b></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10 · 2.1 -->
+    <section class="slide">
+      <p class="eyebrow">2.1 · The big idea</p>
+      <h1 class="h">A "tool" is just a Python function the LLM can call</h1>
+      <p class="lead">No magic. You hand the LLM:</p>
+      <ul class="clean">
+        <li>A list of function <strong>signatures</strong> (as JSON schemas)</li>
+        <li>The user's question</li>
+      </ul>
+      <p class="lead">The LLM returns: <em>"Call <code class="inl">search_products</code> with <code class="inl">{"term": "keyboard"}</code>."</em></p>
+      <p class="lead soft">Your code: looks it up, calls it, sends the result back, lets the LLM decide what's next.</p>
+    </section>
+
+    <!-- 11 · 2.2 -->
+    <section class="slide">
+      <p class="eyebrow">2.2 · What the LLM actually sees</p>
+      <h1 class="h">Each tool arrives as a JSON schema</h1>
+      <pre class="code" data-lang="json"><code class="py">{
+  "type": "function",
+  "function": {
+    "name": "search_products",
+    "description": "Find products whose name contains the term.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "term": { "type": "string", "description": "Search substring" }
+      },
+      "required": ["term"]
+    }
+  }
+}</code></pre>
+      <p class="lead soft" style="margin-top:14px">You write this dict <strong>by hand</strong> in the raw approach. Get the schema wrong → the LLM calls your tool wrong. §3 will eliminate it.</p>
+    </section>
+
+    <!-- 12 · 2.3 -->
+    <section class="slide">
+      <p class="eyebrow">2.3 · Under the hood — the raw loop</p>
+      <h1 class="h">The entire agent loop in ~15 lines</h1>
+      <pre class="code"><code class="py">def ask(prompt, tools, llm):
+    messages = [{"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user",   "content": prompt}]
+    for step in range(1, max_steps + 1):
+        resp = llm.chat.completions.create(
+            model="gpt-4o-mini", messages=messages,
+            tools=[t.openai_schema() for t in tools])
+        msg = resp.choices[0].message
+        if not msg.tool_calls:
+            return msg.content                    # final answer
+        messages.append(msg)                      # assistant msg with tool_calls
+        for call in msg.tool_calls:
+            result = run_tool(call)
+            messages.append({"role": "tool", "tool_call_id": call.id,
+                             "content": json.dumps(result)})
+    raise RuntimeError("did not converge")</code></pre>
+    </section>
+
+    <!-- 13 · 2.4 predict -->
+    <section class="slide">
+      <p class="eyebrow">2.4 · Predict</p>
+      <h1 class="h">🔮 What happens if you forget <code class="inl">tool_call_id</code>?</h1>
+      <p class="lead">The LLM asked you to call <code class="inl">search_products</code>. You ran it, got results, appended a <code class="inl">tool</code> message… but forgot to set <code class="inl">tool_call_id</code>.</p>
+      <div class="predict"><span class="q">🔮</span><div><b>Predict:</b> What do you think happens on the next API call?</div></div>
+    </section>
+
+    <!-- 14 · 2.5 -->
+    <section class="slide">
+      <p class="eyebrow">2.5 · The tool_call_id chain</p>
+      <h1 class="h">The #1 lab-breakage point</h1>
+      <p class="lead">When the LLM asks for a tool, you must append <strong>two things</strong>:</p>
+      <pre class="code"><code class="py">messages.append(msg)                           # 1. assistant
+messages.append({"role": "tool",
+                 "tool_call_id": call.id,      # must match
+                 "content": json.dumps(result)})  # 2. per call</code></pre>
+      <p class="lead soft" style="margin-top:14px">Miss the id → the next API call 400s. This is why frameworks exist.</p>
+    </section>
+
+    <!-- 15 · 2.6 -->
+    <section class="slide">
+      <p class="eyebrow">2.6 · The loop, visually</p>
+      <h1 class="h">Plan → Act → Observe → repeat</h1>
+      <div class="steps">
+        <div class="step"><span class="k">User prompt</span><div>enters the loop</div></div>
+        <div class="step"><span class="k">LLM(messages, tools)</span><div>decides next action</div></div>
+        <div class="step"><span class="k">tool_calls?</span><div><b>yes</b>: run tools, append observation, loop (up to <code class="inl">max_steps</code>) / <b>no</b>: return final answer</div></div>
+      </div>
+      <p class="lead"><strong>Plan</strong> (LLM picks a tool) → <strong>Act</strong> (your code runs it) → <strong>Observe</strong> (feed the result back) → repeat until done.</p>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook: <b>module-11 §2 cells 1–3</b> — build the raw loop, watch tool_call_id chaining</div></div>
+    </section>
+
+    <!-- 16 · 2.7 -->
+    <section class="slide">
+      <p class="eyebrow">2.7 · When the loop goes wrong</p>
+      <h1 class="h">Three failure modes you'll hit</h1>
+      <table class="moves">
+        <tr><td>Tool <strong>never called</strong></td><td class="tool">description is vague → rewrite the docstring</td></tr>
+        <tr><td><strong>Infinite loop</strong></td><td class="tool">system prompt doesn't say when to stop → add max_steps cap</td></tr>
+        <tr><td><strong>Wrong tool</strong> called</td><td class="tool">overlapping descriptions → rename to be distinct</td></tr>
+      </table>
+      <p class="lead soft" style="margin-top:18px">The LLM reads tool descriptions like a developer reads docs — if your docs are ambiguous, so are the calls. §3's framework doesn't fix bad descriptions; it fixes the <em>plumbing</em> around them.</p>
+    </section>
+
+    <!-- 17 · Section 3 divider -->
+    <section class="slide section">
+      <span class="ghost">3</span>
+      <div class="secrow">
+        <div class="secnum">3</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>Pydantic AI — the framework does the loop</h1>
+          <div class="sub"><code class="inl">@agent.tool</code> · <code class="inl">RunContext</code> · <code class="inl">run_sync</code></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 18 · 3.1 -->
+    <section class="slide">
+      <p class="eyebrow">3.1 · @agent.tool is the third decorator moment</p>
+      <h1 class="h">Same pattern every time: hand your function to a framework</h1>
+      <table class="moves">
+        <tr><td>Day 1</td><td class="tool">@app.get("/products")</td><td>serves it as an HTTP route</td></tr>
+        <tr><td>Day 3</td><td class="tool">@pytest.fixture</td><td>injects it as test setup</td></tr>
+        <tr><td>Day 4</td><td class="tool">@agent.tool</td><td>exposes it as a tool the LLM can call</td></tr>
+      </table>
+      <p class="lead soft" style="margin-top:18px">The framework stamps metadata and does the plumbing.</p>
+    </section>
+
+    <!-- 19 · 3.2 -->
+    <section class="slide">
+      <p class="eyebrow">3.2 · Define the agent + tools</p>
+      <h1 class="h">Schema auto-derived from type hints + docstring</h1>
+      <pre class="code"><code class="py">from pydantic_ai import Agent, RunContext
+
+catalog_agent = Agent(
+    deps_type=ProductCatalog,
+    instructions=SYSTEM_PROMPT,
+)
+
+@catalog_agent.tool
+def search_products(ctx: RunContext[ProductCatalog], term: str) -> list[dict]:
+    """Find products whose name contains the given substring."""
+    return [p.model_dump() for p in ctx.deps.search_by_name(term)]</code></pre>
+      <p class="lead soft" style="margin-top:14px">No hand-written JSON dict.</p>
+    </section>
+
+    <!-- 20 · 3.3 -->
+    <section class="slide">
+      <p class="eyebrow">3.3 · Schema: hand-written vs auto-derived</p>
+      <h1 class="h">The same tool — two ways to declare it</h1>
+      <table class="moves">
+        <tr><td class="tool">By hand (§2)</td><td class="tool">@agent.tool (§3)</td></tr>
+        <tr><td>12-line JSON dict</td><td>3-line function signature</td></tr>
+        <tr><td><code class="inl">"description"</code> as a string literal</td><td>the docstring</td></tr>
+        <tr><td><code class="inl">"type": "string"</code></td><td><code class="inl">term: str</code></td></tr>
+        <tr><td>easy to typo, hard to refactor</td><td>stays in sync with the code</td></tr>
+      </table>
+      <pre class="code" style="margin-top:14px"><code class="py">@catalog_agent.tool
+def search_products(ctx: RunContext[ProductCatalog], term: str) -> list[dict]:
+    """Find products whose name contains the given substring."""</code></pre>
+    </section>
+
+    <!-- 21 · 3.4 -->
+    <section class="slide">
+      <p class="eyebrow">3.4 · RunContext — the injection seam returns</p>
+      <h1 class="h">The same dependency-injection pattern from Day 3</h1>
+      <pre class="code"><code class="py">@catalog_agent.tool
+def list_products(ctx: RunContext[ProductCatalog]) -> list[dict]:
+    """Return every product in the catalog."""
+    return [p.model_dump() for p in ctx.deps.list_all()]</code></pre>
+      <table class="moves" style="margin-top:18px">
+        <tr><td class="tool">Day 3</td><td class="tool">Day 4</td></tr>
+        <tr><td><code class="inl">APIClient(session=mock_session)</code></td><td><code class="inl">agent.run_sync(prompt, deps=catalog)</code></td></tr>
+        <tr><td>inject a fake <code class="inl">requests.Session</code></td><td>inject a test <code class="inl">ProductCatalog</code></td></tr>
+        <tr><td>test the client without the network</td><td>test the agent without the LLM</td></tr>
+      </table>
+    </section>
+
+    <!-- 22 · 3.5 -->
+    <section class="slide">
+      <p class="eyebrow">3.5 · Run the agent — and swap the brain</p>
+      <h1 class="h">The model is a parameter, not an architecture decision</h1>
+      <pre class="code"><code class="py">result = catalog_agent.run_sync(
+    "What's our most expensive product?",
+    deps=ProductCatalog(seed_products()),
+    model="openai:gpt-4o-mini",            # ← change this string, everything else stays
+)
+print(result.output)
+# → "The most expensive product is the Mechanical Keyboard, at ₹5,499."</code></pre>
+      <p class="lead" style="margin-top:16px">No loop, no <code class="inl">tool_call_id</code> chaining, no <code class="inl">max_steps</code>. <strong>Your code is the tools.</strong> Swap to <code class="inl">"anthropic:claude-haiku-4-5"</code> or <code class="inl">"ollama:llama3.2"</code> and nothing else changes.</p>
+    </section>
+
+    <!-- 23 · 3.6 -->
+    <section class="slide">
+      <p class="eyebrow">3.6 · When Pydantic AI goes wrong</p>
+      <h1 class="h">Understanding §2 is how you debug §3</h1>
+      <p class="lead">The framework hides the loop — so when it breaks, the errors come from <em>inside</em> the framework.</p>
+      <table class="moves">
+        <tr><td class="tool">ModelRetry on every call</td><td>tool raises unhandled exception → add try/except, return error <em>string</em></td></tr>
+        <tr><td class="tool">UnexpectedModelBehavior</td><td>malformed tool call JSON → check the model string (smaller models hallucinate schemas)</td></tr>
+        <tr><td class="tool">Agent "answers" without tools</td><td>system prompt doesn't say to use tools → add "Always use tools — never guess" to <code class="inl">instructions</code></td></tr>
+      </table>
+    </section>
+
+    <!-- 24 · 3.7 -->
+    <section class="slide">
+      <p class="eyebrow">3.7 · By hand vs. framework — why we showed both</p>
+      <h1 class="h">The framework saves typing, not understanding</h1>
+      <table class="moves">
+        <tr><td class="tool">By hand (§2)</td><td class="tool">Pydantic AI (§3)</td></tr>
+        <tr><td>Hand-written JSON schema dicts</td><td>Schema auto-derived from type hints</td></tr>
+        <tr><td>Manual <code class="inl">ask()</code> loop + <code class="inl">tool_call_id</code> chaining</td><td><code class="inl">agent.run_sync(...)</code> — hidden</td></tr>
+        <tr><td><code class="inl">max_steps</code> → <code class="inl">raise RuntimeError</code></td><td>built-in turn limit</td></tr>
+        <tr><td>~80 lines</td><td>~30 lines</td></tr>
+      </table>
+      <p class="lead soft" style="margin-top:16px">When a real agent breaks — a <code class="inl">tool_call_id</code> 400, a runaway loop — whoever hand-rolled it debugs in minutes.</p>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook: <b>module-11 §3</b> — the same agent in Pydantic AI, then swap the model string</div></div>
+    </section>
+
+    <!-- 25 · LAB -->
+    <section class="slide lab">
+      <span class="labtag">🧪 LAB 11 · 80 MIN</span>
+      <h1>Synthesize, then build the <code class="inl" style="font-size:.85em">CatalogAgent</code></h1>
+      <p class="lead">Open <code class="inl">modules/m11-tools-agent-loop/lab/README.md</code></p>
+      <p class="lead"><strong>Part A (~20 min):</strong> the LLM processes your <code class="inl">ProductCatalog</code> output — raw products in → a plain-English answer, then a validated <code class="inl">CatalogSummary</code>.</p>
+      <p class="lead"><strong>Part B (the core):</strong> build the <code class="inl">CatalogAgent</code> with Pydantic AI — <code class="inl">Agent(...)</code>, four <code class="inl">@agent.tool</code> functions, <code class="inl">agent.run_sync()</code>. The <code class="inl">RunContext[ProductCatalog]</code> injection is the Day-3 seam — no server needed.</p>
+      <div class="endstate"><b>Stretch:</b> swap <code>model="openai:gpt-4o-mini"</code> to <code>model="anthropic:claude-haiku-4-5"</code> in <code>run_sync</code> — one line, same tools.</div>
+    </section>
+
+  </div>
+</div>
+
+<div class="nav">
+  <button id="prev" aria-label="Previous slide">◀</button>
+  <span class="count" id="count">1 / 25</span>
+  <button id="next" aria-label="Next slide">▶</button>
+</div>
+<div class="hint">← → to navigate</div>
+
+<script>
+(function(){
+  "use strict";
+  const stage = document.querySelector('.stage');
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const N = slides.length;
+  const countEl = document.getElementById('count');
+
+  slides.forEach((s, k)=>{
+    const p = document.createElement('div'); p.className='prog';
+    const f = document.createElement('div'); f.className='foot';
+    f.innerHTML = '<span class="brand"><span class="dot"></span>Acuity · Day 4 · Module 11 — Building LLM Applications</span>'
+                + '<span>'+String(k+1).padStart(2,'0')+' / '+String(N).padStart(2,'0')+'</span>';
+    s.appendChild(p); s.appendChild(f);
+    p.style.width = ((k+1)/N*100)+'%';
+  });
+
+  function fit(){
+    const pad = 24;
+    const s = Math.min((window.innerWidth-pad*2)/1280, (window.innerHeight-pad*2-40)/720);
+    stage.style.transform = 'translate(-50%,-50%) scale('+s+')';
+  }
+  window.addEventListener('resize', fit); fit();
+
+  let i = 0;
+  function show(n){
+    i = Math.max(0, Math.min(N-1, n));
+    slides.forEach((s,k)=>s.classList.toggle('active', k===i));
+    countEl.textContent = (i+1)+' / '+N;
+    location.hash = i+1;
+  }
+  function next(){ show(i+1); }
+  function prev(){ show(i-1); }
+
+  document.getElementById('next').addEventListener('click', next);
+  document.getElementById('prev').addEventListener('click', prev);
+  window.addEventListener('keydown', e=>{
+    if(['ArrowRight','PageDown',' '].includes(e.key)){ e.preventDefault(); next(); }
+    else if(['ArrowLeft','PageUp'].includes(e.key)){ e.preventDefault(); prev(); }
+    else if(e.key==='Home'){ e.preventDefault(); show(0); }
+    else if(e.key==='End'){ e.preventDefault(); show(N-1); }
+  });
+  const start = parseInt(location.hash.replace('#',''),10);
+  if(start>=1 && start<=N) i = start-1;
+
+  const KW = new Set(['def','return','if','elif','else','for','while','in','not','and','or',
+    'import','from','as','try','except','finally','raise','with','class','lambda','pass',
+    'break','continue','is','yield','global','nonlocal','assert','del','await','async']);
+  const CON = new Set(['True','False','None']);
+  const BI = new Set(['print','type','len','sum','range','enumerate','isinstance','open','list',
+    'dict','set','tuple','int','float','str','bool','round','dir','sorted','map','filter','zip',
+    'LookupError','ValueError','KeyError','TypeError',
+    'BaseModel','Field','Agent','RunContext','ProductCatalog','pipeline']);
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const TOK = /(#.*$)|((?:[fFrRbB]{0,2})(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'))|(\b\d+\.?\d*\b)|([A-Za-z_]\w*)/gm;
+
+  document.querySelectorAll('pre.code code').forEach(block=>{
+    const src = block.textContent;
+    let out='', last=0, m;
+    TOK.lastIndex = 0;
+    while((m = TOK.exec(src))){
+      out += esc(src.slice(last, m.index));
+      if(m[1])       out += '<span class="t-com">'+esc(m[1])+'</span>';
+      else if(m[2])  out += '<span class="t-str">'+esc(m[2])+'</span>';
+      else if(m[3])  out += '<span class="t-num">'+esc(m[3])+'</span>';
+      else if(m[4]){
+        const w = m[4];
+        const cls = KW.has(w)?'t-kw':CON.has(w)?'t-con':BI.has(w)?'t-bi':null;
+        out += cls ? '<span class="'+cls+'">'+esc(w)+'</span>' : esc(w);
+      }
+      last = m.index + m[0].length;
+    }
+    out += esc(src.slice(last));
+    block.innerHTML = out;
+  });
+
+  show(i);
+})();
+</script>

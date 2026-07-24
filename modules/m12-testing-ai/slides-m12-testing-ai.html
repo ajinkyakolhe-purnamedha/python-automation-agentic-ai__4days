@@ -1,0 +1,687 @@
+<meta charset="utf-8">
+<title>Module 12 · Testing AI — Acuity Day 4</title>
+<style>
+  :root{
+    --bg:#E7EAF1; --bg2:#EFF1F7; --slide:#FFFFFF; --ink:#131A24; --ink-soft:#586477;
+    --line:#E4E8EF; --accent:#3A54D8; --accent2:#0FA9A0; --accent-soft:#EBEEFC; --accent-line:#CBD5F7;
+    --code-bg:#F6F8FC; --code-line:#E6EBF3; --code-head:#EEF2F9;
+    --grid:rgba(58,84,216,.055); --glow:rgba(58,84,216,.10); --glow2:rgba(15,169,160,.08);
+    --sy-com:#8A97A6; --sy-str:#0A7D55; --sy-num:#B87503; --sy-kw:#8250DF; --sy-con:#0550AE; --sy-bi:#0F63C4;
+    --good:#1E874B; --bad:#C23B47;
+    --shadow:0 30px 70px -26px rgba(19,26,36,.32), 0 4px 14px -6px rgba(19,26,36,.16);
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","Menlo","Cascadia Code","Roboto Mono",monospace;
+    --grad:linear-gradient(102deg,var(--accent) 0%,var(--accent2) 118%);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#080B11; --bg2:#0E131B; --slide:#151C26; --ink:#EAEEF5; --ink-soft:#98A6B8;
+      --line:#26313F; --accent:#8098FF; --accent2:#3FD6C8; --accent-soft:#1B2540; --accent-line:#2E3C64;
+      --code-bg:#0E141D; --code-line:#232F3D; --code-head:#131B26;
+      --grid:rgba(128,152,255,.07); --glow:rgba(128,152,255,.14); --glow2:rgba(63,214,200,.10);
+      --sy-com:#5E6B7A; --sy-str:#7EE0A8; --sy-num:#F0B37E; --sy-kw:#C792EA; --sy-con:#79B8FF; --sy-bi:#8AC7FF;
+      --good:#57C98B; --bad:#F0808C;
+      --shadow:0 34px 80px -26px rgba(0,0,0,.75), 0 4px 14px -6px rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#E7EAF1; --bg2:#EFF1F7; --slide:#FFFFFF; --ink:#131A24; --ink-soft:#586477;
+    --line:#E4E8EF; --accent:#3A54D8; --accent2:#0FA9A0; --accent-soft:#EBEEFC; --accent-line:#CBD5F7;
+    --code-bg:#F6F8FC; --code-line:#E6EBF3; --code-head:#EEF2F9;
+    --grid:rgba(58,84,216,.055); --glow:rgba(58,84,216,.10); --glow2:rgba(15,169,160,.08);
+    --sy-com:#8A97A6; --sy-str:#0A7D55; --sy-num:#B87503; --sy-kw:#8250DF; --sy-con:#0550AE; --sy-bi:#0F63C4;
+    --good:#1E874B; --bad:#C23B47;
+    --shadow:0 30px 70px -26px rgba(19,26,36,.32), 0 4px 14px -6px rgba(19,26,36,.16);
+  }
+  :root[data-theme="dark"]{
+    --bg:#080B11; --bg2:#0E131B; --slide:#151C26; --ink:#EAEEF5; --ink-soft:#98A6B8;
+    --line:#26313F; --accent:#8098FF; --accent2:#3FD6C8; --accent-soft:#1B2540; --accent-line:#2E3C64;
+    --code-bg:#0E141D; --code-line:#232F3D; --code-head:#131B26;
+    --grid:rgba(128,152,255,.07); --glow:rgba(128,152,255,.14); --glow2:rgba(63,214,200,.10);
+    --sy-com:#5E6B7A; --sy-str:#7EE0A8; --sy-num:#F0B37E; --sy-kw:#C792EA; --sy-con:#79B8FF; --sy-bi:#8AC7FF;
+    --good:#57C98B; --bad:#F0808C;
+    --shadow:0 34px 80px -26px rgba(0,0,0,.75), 0 4px 14px -6px rgba(0,0,0,.55);
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;color:var(--ink);font-family:var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased;
+       background:
+         radial-gradient(60% 55% at 12% 8%, var(--glow) 0%, transparent 60%),
+         radial-gradient(55% 50% at 92% 96%, var(--glow2) 0%, transparent 60%),
+         linear-gradient(160deg,var(--bg) 0%,var(--bg2) 100%);}
+
+  /* ---- scaled stage ---- */
+  #viewport{position:fixed;inset:0}
+  .stage{position:absolute;top:50%;left:50%;width:1280px;height:720px;transform-origin:center center}
+  .slide{position:absolute;inset:0;background:var(--slide);border:1px solid var(--line);border-radius:18px;
+         box-shadow:var(--shadow);padding:60px 68px 56px;display:none;flex-direction:column;overflow:hidden}
+  .slide.active{display:flex}
+  /* textured backdrop + accent top-rail on every slide */
+  .slide::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:34px 34px;-webkit-mask-image:radial-gradient(80% 70% at 80% 0%,#000 0%,transparent 72%);
+            mask-image:radial-gradient(80% 70% at 80% 0%,#000 0%,transparent 72%);opacity:.9}
+  .slide::after{content:"";position:absolute;top:0;left:0;right:0;height:5px;border-radius:18px 18px 0 0;
+    background:var(--grad);z-index:2;opacity:.95}
+  .slide > *{position:relative;z-index:1}
+
+  @media (prefers-reduced-motion:no-preference){
+    .slide.active > *:not(.prog):not(.foot){animation:rise .5s both cubic-bezier(.2,.72,.2,1)}
+    .slide.active > *:nth-child(1){animation-delay:.03s}
+    .slide.active > *:nth-child(2){animation-delay:.09s}
+    .slide.active > *:nth-child(3){animation-delay:.15s}
+    .slide.active > *:nth-child(4){animation-delay:.21s}
+    .slide.active > *:nth-child(5){animation-delay:.27s}
+    .slide.active > *:nth-child(6){animation-delay:.33s}
+    @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  }
+
+  /* progress + footer chrome */
+  .prog{position:absolute;top:0;left:0;height:5px;background:var(--grad);border-radius:18px 0 0 0;
+        z-index:3;box-shadow:0 0 12px var(--glow);transition:width .4s cubic-bezier(.4,.7,.2,1)}
+  .foot{position:absolute;left:68px;right:68px;bottom:22px;display:flex;justify-content:space-between;align-items:center;
+        font-size:12.5px;color:var(--ink-soft);font-family:var(--mono);letter-spacing:.05em;z-index:2}
+  .foot .brand{display:flex;align-items:center;gap:9px}
+  .foot .dot{width:7px;height:7px;border-radius:2px;background:var(--grad);transform:rotate(45deg)}
+
+  /* type primitives */
+  .eyebrow{display:inline-flex;align-items:center;gap:11px;font-family:var(--mono);font-size:13.5px;letter-spacing:.17em;
+           text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 0 22px}
+  .eyebrow::before{content:"";width:22px;height:2px;border-radius:2px;background:var(--grad)}
+  h1.h{font-size:41px;line-height:1.1;font-weight:800;letter-spacing:-.022em;margin:0 0 18px;text-wrap:balance;position:relative;padding-bottom:14px}
+  h1.h::after{content:"";position:absolute;left:0;bottom:0;width:56px;height:4px;border-radius:3px;background:var(--grad)}
+  .lead{font-size:22px;line-height:1.5;color:var(--ink);margin:0 0 24px;max-width:60ch;font-weight:400}
+  .lead.soft{color:var(--ink-soft)}
+  strong{font-weight:700}
+  .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .num{color:var(--good)} .no{color:var(--bad)}
+  code.inl{font-family:var(--mono);font-size:.88em;background:var(--accent-soft);color:var(--accent);
+           padding:.1em .4em;border-radius:6px;font-weight:600;white-space:nowrap;border:1px solid var(--accent-line)}
+
+  /* code block — window with header */
+  pre.code{margin:0;background:var(--code-bg);border:1px solid var(--code-line);border-radius:13px;
+           padding:44px 26px 22px;overflow-x:auto;position:relative;
+           box-shadow:0 18px 40px -24px rgba(19,26,36,.4), inset 0 1px 0 rgba(255,255,255,.35)}
+  pre.code::before{content:"";position:absolute;top:0;left:0;right:0;height:34px;background:var(--code-head);
+           border-bottom:1px solid var(--code-line);border-radius:13px 13px 0 0}
+  pre.code::after{content:"● python";position:absolute;top:9px;left:16px;font-family:var(--mono);font-size:12px;
+           letter-spacing:.06em;color:var(--ink-soft);font-weight:600;z-index:1}
+  pre.code[data-lang="bash"]::after{content:"● bash"}
+  pre.code[data-lang="json"]::after{content:"● json"}
+  pre.code[data-lang="yaml"]::after{content:"● yaml"}
+  pre.code[data-lang="text"]::after{content:"● text"}
+  pre.code code{font-family:var(--mono);font-size:20px;line-height:1.62;color:var(--ink);display:block;white-space:pre;position:relative;z-index:1}
+  .t-com{color:var(--sy-com);font-style:italic} .t-str{color:var(--sy-str)} .t-num{color:var(--sy-num)}
+  .t-kw{color:var(--sy-kw);font-weight:600} .t-con{color:var(--sy-con);font-weight:600} .t-bi{color:var(--sy-bi)}
+
+  .along{margin-top:auto;display:flex;align-items:center;gap:15px;
+         background:linear-gradient(100deg,var(--accent-soft),transparent 90%);
+         border:1px solid var(--accent-line);border-radius:12px;padding:15px 20px;font-size:17px;color:var(--ink);
+         box-shadow:0 10px 30px -20px var(--glow)}
+  .along .play{flex:none;width:34px;height:34px;border-radius:9px;background:var(--grad);color:#fff;
+         display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;box-shadow:0 6px 16px -6px var(--glow)}
+  .along code{font-family:var(--mono);font-size:.92em;color:var(--accent);font-weight:600}
+  .along b{font-weight:700}
+
+  /* predict callout */
+  .predict{display:flex;align-items:center;gap:13px;margin:0 0 6px;
+         background:linear-gradient(100deg,rgba(15,169,160,.12),transparent 92%);
+         border:1px solid var(--accent2);border-radius:12px;padding:12px 18px;font-size:18px;color:var(--ink)}
+  .predict .q{flex:none;width:30px;height:30px;border-radius:8px;
+         background:linear-gradient(120deg,var(--accent2),var(--accent));color:#fff;
+         display:flex;align-items:center;justify-content:center;font-size:15px}
+  .predict b{font-weight:700;color:var(--accent2)}
+
+  /* pipeline steps as chips/cards */
+  .steps{display:flex;flex-direction:column;gap:13px;margin:2px 0 24px}
+  .step{display:flex;gap:16px;align-items:center;font-size:20px;line-height:1.35;background:var(--code-bg);
+        border:1px solid var(--code-line);border-radius:12px;padding:14px 18px}
+  .step .k{font-family:var(--mono);font-size:13px;font-weight:700;color:#fff;background:var(--grad);
+           padding:5px 11px;border-radius:7px;white-space:nowrap;letter-spacing:.04em}
+  .step b{font-weight:700}
+
+  /* generic list */
+  ul.clean{list-style:none;margin:0 0 22px;padding:0;display:flex;flex-direction:column;gap:14px}
+  ul.clean li{font-size:21px;line-height:1.45;padding-left:30px;position:relative;color:var(--ink)}
+  ul.clean li::before{content:"";position:absolute;left:0;top:.48em;width:11px;height:11px;border-radius:3px;
+           background:var(--grad);transform:rotate(45deg);box-shadow:0 3px 8px -3px var(--glow)}
+  ul.clean li b{font-weight:700}
+
+  /* week map */
+  pre.map{margin:0;background:var(--code-bg);border:1px solid var(--code-line);border-radius:13px;padding:26px 30px;
+          font-family:var(--mono);font-size:20px;line-height:1.85;color:var(--ink);overflow-x:auto;
+          box-shadow:0 18px 40px -26px rgba(19,26,36,.4)}
+  pre.map b{color:var(--accent);font-weight:700}
+
+  /* moves table as rows */
+  table.moves{border-collapse:separate;border-spacing:0 0;width:100%;font-size:20px}
+  table.moves td{padding:15px 16px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.moves tr:last-child td{border-bottom:none}
+  table.moves td.tool{font-family:var(--mono);color:var(--accent);white-space:nowrap;width:46%;font-weight:600}
+  table.moves td.tool .no{color:var(--bad)}
+
+  .grow{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center}
+
+  /* ---- title slide ---- */
+  .slide.title{justify-content:center;padding:60px 76px}
+  .slide.title::before{-webkit-mask-image:radial-gradient(90% 90% at 85% 12%,#000,transparent 72%);
+            mask-image:radial-gradient(90% 90% at 85% 12%,#000,transparent 72%);opacity:1}
+  .tglow{position:absolute;width:620px;height:620px;right:-120px;top:-160px;border-radius:50%;z-index:0;
+         background:radial-gradient(circle,var(--glow) 0%,transparent 62%);pointer-events:none}
+  .kicker{display:inline-flex;align-items:center;gap:12px;font-family:var(--mono);font-size:14px;letter-spacing:.24em;
+          text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 0 22px}
+  .kicker::before{content:"";width:30px;height:2px;background:var(--grad);border-radius:2px}
+  .slide.title h1{font-size:92px;line-height:.94;font-weight:800;letter-spacing:-.035em;margin:0 0 14px}
+  .slide.title h2{font-size:38px;font-weight:500;color:var(--ink-soft);margin:0;letter-spacing:-.012em;max-width:22ch;line-height:1.15}
+  .slide.title h2 b{color:var(--ink);font-weight:800}
+  .metaline{margin-top:38px;display:inline-flex;align-items:center;gap:14px;font-family:var(--mono);font-size:17px;
+            color:var(--ink-soft);letter-spacing:.02em;background:var(--code-bg);border:1px solid var(--code-line);
+            padding:12px 20px;border-radius:11px}
+  .metaline b{color:var(--accent);font-weight:700}
+
+  /* ---- section divider ---- */
+  .slide.section{justify-content:center;overflow:hidden}
+  .ghost{position:absolute;right:-30px;bottom:-140px;font-size:520px;font-weight:800;line-height:.7;z-index:0;
+          letter-spacing:-.05em;font-variant-numeric:tabular-nums;color:transparent;
+          -webkit-text-stroke:2px var(--accent-line);opacity:.55;pointer-events:none;user-select:none}
+  .secrow{display:flex;align-items:center;gap:34px}
+  .secnum{font-size:132px;font-weight:800;line-height:.8;letter-spacing:-.04em;font-variant-numeric:tabular-nums;
+          background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;
+          flex:none;filter:drop-shadow(0 12px 24px var(--glow))}
+  .secdiv{width:2px;align-self:stretch;background:var(--grad);border-radius:2px;opacity:.5;margin:6px 0}
+  .secmeta .eyebrow{margin-bottom:14px}
+  .secmeta h1{font-size:58px;font-weight:800;letter-spacing:-.028em;margin:0;line-height:1.02}
+  .secmeta .sub{margin-top:20px;font-size:19px;color:var(--ink-soft);font-family:var(--mono);letter-spacing:.02em;max-width:52ch;line-height:1.7}
+  .secmeta .sub b{color:var(--ink)}
+
+  /* ---- lab slide ---- */
+  .slide.lab::before{opacity:1;-webkit-mask-image:radial-gradient(90% 80% at 12% 6%,#000,transparent 70%);
+            mask-image:radial-gradient(90% 80% at 12% 6%,#000,transparent 70%)}
+  .labtag{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:14px;font-weight:700;
+          color:#fff;letter-spacing:.08em;background:var(--grad);padding:8px 16px;border-radius:999px;margin:0 0 22px;
+          box-shadow:0 10px 24px -10px var(--glow)}
+  .slide.lab h1{font-size:48px;font-weight:800;letter-spacing:-.022em;margin:0 0 12px}
+  .endstate{margin-top:auto;background:var(--code-bg);border:1px solid var(--code-line);border-left:4px solid var(--accent);
+            border-radius:12px;padding:17px 22px;font-family:var(--mono);font-size:18px;color:var(--ink);
+            box-shadow:0 14px 34px -22px rgba(19,26,36,.4)}
+  .endstate b{color:var(--good);font-weight:700}
+
+  /* ---- off-stage nav chrome ---- */
+  .nav{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:6px;z-index:20;
+       background:var(--slide);border:1px solid var(--line);border-radius:14px;padding:6px;
+       box-shadow:0 12px 30px -12px rgba(0,0,0,.4)}
+  .nav button{font-family:var(--mono);font-size:15px;border:none;background:transparent;color:var(--ink);
+              width:38px;height:38px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+              transition:background .14s,color .14s}
+  .nav button:hover{background:var(--accent-soft);color:var(--accent)}
+  .nav button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .nav .count{font-family:var(--mono);font-size:13.5px;color:var(--ink-soft);min-width:66px;text-align:center;font-variant-numeric:tabular-nums}
+  .hint{position:fixed;bottom:22px;right:20px;font-family:var(--mono);font-size:12px;color:var(--ink-soft);opacity:.55;z-index:20}
+</style>
+
+<div id="viewport">
+  <div class="stage">
+
+    <!-- 1 · MODULE 12 TITLE -->
+    <section class="slide title active">
+      <span class="tglow"></span>
+      <p class="kicker">Module 12</p>
+      <h1><span class="grad">Testing AI</span></h1>
+      <h2>Testing &amp; Validating AI Tools and Outputs</h2>
+      <p class="metaline"><b>~40 min</b> · then 80 min lab — the spine module: Day-3 patterns applied to AI</p>
+    </section>
+
+    <!-- 2 · Day 3 → Day 4 comparison -->
+    <section class="slide">
+      <p class="eyebrow">Day 3 → Day 4</p>
+      <h1 class="h">Same patterns, new target</h1>
+      <table class="moves">
+        <tr><td class="tool">Day 3 (deterministic code)</td><td class="tool">Day 4 (AI code)</td></tr>
+        <tr><td><code class="inl">mock_session = Mock()</code></td><td><code class="inl">catalog_agent.override(model=TestModel())</code></td></tr>
+        <tr><td><code class="inl">@patch("requests.Session")</code></td><td><code class="inl">FunctionModel(_scripted_calls(...))</code></td></tr>
+        <tr><td><code class="inl">@pytest.mark.parametrize</code></td><td><code class="inl">@pytest.mark.parametrize</code> over golden evals</td></tr>
+        <tr><td>assert exact equality</td><td>assert <strong>shape</strong>, <strong>tools called</strong>, <strong>substring</strong></td></tr>
+      </table>
+      <p class="lead soft" style="margin-top:16px">Same <code class="inl">pytest</code> muscle, same injection seams, same CI. The only difference: <strong>the thing you're isolating is an LLM, not a network call.</strong></p>
+    </section>
+
+    <!-- 3 · Section 1 divider -->
+    <section class="slide section">
+      <span class="ghost">1</span>
+      <div class="secrow">
+        <div class="secnum">1</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>Why test AI differently?</h1>
+          <div class="sub">the problem + the taxonomy</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 · 12.1 -->
+    <section class="slide">
+      <p class="eyebrow">12.1 · The core problem</p>
+      <h1 class="h">Why AI needs a different testing strategy</h1>
+      <pre class="code" data-lang="text"><code>traditional:  same input → same output → assertEqual()
+AI:           same input → distribution of outputs → ?</code></pre>
+      <p class="lead" style="margin-top:22px">You can't <code class="inl">assertEqual</code> on prose. You <strong>can</strong> assert on:</p>
+      <ul class="clean">
+        <li><strong>Shape</strong> — validates against the Pydantic schema</li>
+        <li><strong>Behaviour</strong> — which tools got called, in what order</li>
+        <li><strong>Substrings</strong> — the answer mentions the key fact</li>
+        <li><strong>Bounds</strong> — ≤ N tool calls, ≤ M steps</li>
+      </ul>
+    </section>
+
+    <!-- 5 · 12.2 -->
+    <section class="slide">
+      <p class="eyebrow">12.2 · The taxonomy</p>
+      <h1 class="h">Four classes of tests for an AI system</h1>
+      <div class="steps">
+        <div class="step"><span class="k">1</span><div><b>Tool tests</b> — each tool is plain Python</div></div>
+        <div class="step"><span class="k">2</span><div><b>Schema tests</b> — LLM JSON validates against Pydantic</div></div>
+        <div class="step"><span class="k">3</span><div><b>Loop tests</b> — mock the LLM, verify the orchestration</div></div>
+        <div class="step"><span class="k">4</span><div><b>Golden evals</b> — a file of cases that lock behaviour</div></div>
+      </div>
+      <p class="lead"><strong>All four run without an API key</strong> — CI never pays OpenAI. Only an optional live eval does.</p>
+    </section>
+
+    <!-- 6 · Section 2 divider -->
+    <section class="slide section">
+      <span class="ghost">2</span>
+      <div class="secrow">
+        <div class="secnum">2</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>Writing the tests</h1>
+          <div class="sub"><code class="inl">FunctionModel</code> · <code class="inl">TestModel</code> · <code class="inl">capture_run_messages</code> · golden evals</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7 · 12.3 -->
+    <section class="slide">
+      <p class="eyebrow">12.3 · The mock primitive</p>
+      <h1 class="h"><code class="inl">FunctionModel</code> — scripting the LLM's replies</h1>
+      <p class="lead"><code class="inl">FunctionModel</code> replaces the real LLM with a <strong>Python function you control</strong> — same idea as <code class="inl">Mock(return_value=...)</code> from Day 3.</p>
+      <pre class="code"><code class="py">from pydantic_ai.models.function import FunctionModel
+
+def _force_tool_call(tool_name):
+    """Return a function that makes the agent call one specific tool, then answer."""
+    def model_fn(messages, info):
+        # first call -> ask for the tool; second call -> final text answer
+        ...
+    return model_fn</code></pre>
+      <p class="lead soft" style="margin-top:16px">You write the function; the agent loop runs exactly as if a real LLM responded. No network, no API key, deterministic.</p>
+    </section>
+
+    <!-- 8 · 12.4 -->
+    <section class="slide">
+      <p class="eyebrow">12.4 · Deterministic Python</p>
+      <h1 class="h">Tool tests</h1>
+      <pre class="code"><code class="py">class TestTools:
+    def test_count_by_category(self):
+        api = _fake_catalog(SAMPLE_PRODUCTS)
+        with catalog_agent.override(model=FunctionModel(
+            _force_tool_call("count_by_category")
+        )):
+            with capture_run_messages() as msgs:
+                catalog_agent.run_sync("count", deps=catalog)
+        tool_return = [p for msg in msgs for p in msg.parts
+                       if p.part_kind == "tool-return"][0]
+        assert tool_return.content == {"Electronics": 3, "Fitness": 1}</code></pre>
+      <p class="lead soft" style="margin-top:14px">The tools are <strong>not magic</strong> — they're the functions you tested all Day 3. <code class="inl">FunctionModel</code> forces one specific tool call so you can inspect its return value.</p>
+    </section>
+
+    <!-- 9 · 12.5 -->
+    <section class="slide">
+      <p class="eyebrow">12.5 · Pydantic validation</p>
+      <h1 class="h">Schema tests</h1>
+      <pre class="code"><code class="py">def test_rejects_negative_price(self):
+    with pytest.raises(ValidationError):
+        CatalogQuery(max_price=-5.0)
+
+def test_apply_query_filters(self):
+    api = _fake_catalog(SAMPLE_PRODUCTS)
+    q = CatalogQuery(category="Electronics", max_price=1000.0)
+    assert {p["id"] for p in apply_query(q, api)} == {1}</code></pre>
+      <p class="lead soft" style="margin-top:18px">Pure Pydantic + pure Python — the constraints from M10. The LLM is not in the loop.</p>
+    </section>
+
+    <!-- 10 · 12.6 -->
+    <section class="slide">
+      <p class="eyebrow">12.6 · Day-3 déjà vu</p>
+      <h1 class="h">Loop tests — script the model</h1>
+      <pre class="code"><code class="py">def test_single_tool_call_then_answer(self):
+    api = _fake_catalog(SAMPLE_PRODUCTS)
+    with catalog_agent.override(model=FunctionModel(
+        _scripted_calls([("count_by_category", {})],
+                        "We have 3 Electronics.")
+    )):
+        with capture_run_messages() as msgs:
+            result = catalog_agent.run_sync("how many?", deps=catalog)
+    tool_calls = [p.tool_name for msg in msgs for p in msg.parts
+                  if p.part_kind == "tool-call"]
+    assert tool_calls == ["count_by_category"]</code></pre>
+      <p class="lead soft" style="margin-top:14px"><code class="inl">FunctionModel</code> scripts the LLM's replies — <strong>the same mock pattern as Day 3's <code class="inl">requests</code> retry test.</strong> No network, no key, deterministic.</p>
+    </section>
+
+    <!-- 11 · 12.7 predict -->
+    <section class="slide">
+      <p class="eyebrow">12.7 · Predict</p>
+      <h1 class="h">What does <code class="inl">TestModel</code> pass as arguments?</h1>
+      <p class="lead"><code class="inl">TestModel()</code> calls every registered tool automatically — no scripting. But what arguments does it use?</p>
+      <div class="predict"><span class="q">🔮</span><div>Think about it: <code class="inl">search_products(term: str)</code>. What does <b>TestModel</b> pass for <code class="inl">term</code>?</div></div>
+    </section>
+
+    <!-- 12 · 12.8 -->
+    <section class="slide">
+      <p class="eyebrow">12.8 · Smoke test</p>
+      <h1 class="h">The quick way — <code class="inl">TestModel</code></h1>
+      <pre class="code"><code class="py">def test_all_tools_callable(self):
+    """TestModel calls every tool with default args -- smoke test."""
+    api = _fake_catalog(SAMPLE_PRODUCTS)
+    with catalog_agent.override(model=TestModel()):
+        result = catalog_agent.run_sync("test", deps=catalog)
+    assert result.output</code></pre>
+      <p class="lead" style="margin-top:18px"><code class="inl">TestModel</code> auto-calls each registered tool with <strong>default-typed arguments</strong>: <code class="inl">str → "a"</code>, <code class="inl">int → 0</code>, <code class="inl">bool → True</code>. Great for smoke tests — no scripting needed. Use <code class="inl">FunctionModel</code> when you need to control <strong>which</strong> tool gets called and with what args.</p>
+    </section>
+
+    <!-- 13 · 12.9 -->
+    <section class="slide">
+      <p class="eyebrow">12.9 · A file of cases</p>
+      <h1 class="h">Golden evals</h1>
+      <pre class="code" data-lang="json"><code>[
+  { "id": "eval-01",
+    "prompt": "How many products are in Electronics?",
+    "expected_tool_calls": ["count_by_category"],
+    "expected_answer_contains": ["Electronics"] },
+  { "id": "eval-02",
+    "prompt": "What's the most expensive product?",
+    "expected_tool_calls": ["list_products"],
+    "expected_answer_contains": ["Mechanical Keyboard"] }
+]</code></pre>
+      <p class="lead soft" style="margin-top:16px">Cases live <strong>outside</strong> the code (Day 2 / M6). Add a row every time a real bug ships — the file becomes your <strong>regression suite for behaviour</strong>. This is M10's held-out eval, made permanent.</p>
+    </section>
+
+    <!-- 14 · 12.10 -->
+    <section class="slide">
+      <p class="eyebrow">12.10 · Day-3 parametrize returns</p>
+      <h1 class="h">Parametrize over the golden file</h1>
+      <pre class="code"><code class="py">@pytest.mark.eval
+class TestGoldenQueries:
+    @pytest.mark.parametrize("case", _golden_cases(),
+                             ids=[c["id"] for c in _golden_cases()])
+    def test_case(self, case):
+        api = _fake_catalog(SAMPLE_PRODUCTS)
+        tool_sequence = [(n, {}) for n in case["expected_tool_calls"]]
+        answer = " ".join(case["expected_answer_contains"])
+        with catalog_agent.override(model=FunctionModel(
+            _scripted_calls(tool_sequence, answer)
+        )):
+            with capture_run_messages() as msgs:
+                result = catalog_agent.run_sync(case["prompt"], deps=catalog)
+        tool_calls = [p.tool_name for msg in msgs for p in msg.parts
+                      if p.part_kind == "tool-call"]
+        assert tool_calls == case["expected_tool_calls"]
+        for needle in case["expected_answer_contains"]:
+            assert needle in result.output</code></pre>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook: module-12 golden-evals section — <b>FunctionModel</b> to script the LLM, assert the tool sequence, then parametrize the golden file</div></div>
+    </section>
+
+    <!-- 15 · Section 3 divider -->
+    <section class="slide section">
+      <span class="ghost">3</span>
+      <div class="secrow">
+        <div class="secnum">3</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>CI &amp; production readiness</h1>
+          <div class="sub">no API key in CI · reliability boundaries · the eval ladder</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 16 · 12.11 -->
+    <section class="slide">
+      <p class="eyebrow">12.11 · Safety net</p>
+      <h1 class="h">Preventing accidental real API calls</h1>
+      <pre class="code"><code class="py">import pydantic_ai
+pydantic_ai.models.ALLOW_MODEL_REQUESTS = False</code></pre>
+      <p class="lead" style="margin-top:20px">Set this at the top of your test file. Any test that accidentally tries to hit a real model gets an immediate error instead of a surprise bill. Override with <code class="inl">catalog_agent.override(model=TestModel())</code> — the safeguard only blocks <em>unintended</em> real calls.</p>
+    </section>
+
+    <!-- 17 · 12.12 -->
+    <section class="slide">
+      <p class="eyebrow">12.12 · One green check</p>
+      <h1 class="h">Same CI</h1>
+      <pre class="code" data-lang="yaml"><code># .github/workflows/tests.yml -- already in place from Day 3
+- run: uv run pytest --cov --html=report.html</code></pre>
+      <p class="lead" style="margin-top:18px"><strong>No new workflow.</strong> Agent tests live under <code class="inl">tests/</code> alongside model + client tests, so the <strong>same Day-3 CI matrix</strong> runs them all.</p>
+      <pre class="code" data-lang="text"><code>✓ test (3.10)   ✓ test (3.11)   ✓ test (3.12)   53 tests incl. agent</code></pre>
+      <p class="lead soft" style="margin-top:14px">One green check covers the whole stack — Python, API, and AI.</p>
+    </section>
+
+    <!-- 18 · 12.13 -->
+    <section class="slide">
+      <p class="eyebrow">12.13 · The big picture</p>
+      <h1 class="h">Production-ready AI app shape</h1>
+      <p class="lead">An AI app is still an app. The LLM is one component inside a normal system boundary:</p>
+      <div class="steps">
+        <div class="step"><span class="k">UI</span><div>UI / CLI</div></div>
+        <div class="step"><span class="k">SVC</span><div>application service</div></div>
+        <div class="step"><span class="k">AI</span><div>agent / structured LLM call</div></div>
+        <div class="step"><span class="k">TOOLS</span><div>tools = ProductCatalog methods</div></div>
+        <div class="step"><span class="k">DATA</span><div>database / external systems</div></div>
+      </div>
+      <p class="lead soft">The production question is not "is the model smart?" It is: <strong>can we control, observe, test, and recover from what the model does?</strong></p>
+    </section>
+
+    <!-- 19 · 12.14 -->
+    <section class="slide">
+      <p class="eyebrow">12.14 · Design rule</p>
+      <h1 class="h">Reliability boundaries</h1>
+      <p class="lead">Separate what must be deterministic from what can be flexible:</p>
+      <table class="moves">
+        <tr><td class="tool">Deterministic</td><td class="tool">Flexible</td></tr>
+        <tr><td>tool functions</td><td>final wording</td></tr>
+        <tr><td>Pydantic schemas</td><td>explanation style</td></tr>
+        <tr><td>validation errors</td><td>reasoning path</td></tr>
+        <tr><td>max step limits</td><td>model phrasing</td></tr>
+        <tr><td>write confirmations</td><td>answer tone</td></tr>
+      </table>
+      <p class="lead soft" style="margin-top:16px">Design rule: <strong>probabilistic model inside deterministic rails.</strong></p>
+    </section>
+
+    <!-- 20 · 12.15 -->
+    <section class="slide">
+      <p class="eyebrow">12.15 · Start cheap, climb as needed</p>
+      <h1 class="h">Eval ladder for AI apps</h1>
+      <div class="steps">
+        <div class="step"><span class="k">1</span><div><b>unit tests</b></div></div>
+        <div class="step"><span class="k">2</span><div><b>schema tests</b></div></div>
+        <div class="step"><span class="k">3</span><div><b>mocked loop tests</b> (FunctionModel / TestModel)</div></div>
+        <div class="step"><span class="k">4</span><div><b>golden evals</b></div></div>
+        <div class="step"><span class="k">5</span><div><b>optional live LLM evals</b></div></div>
+        <div class="step"><span class="k">6</span><div><b>production monitoring</b></div></div>
+      </div>
+      <p class="lead">Every bug becomes either a test, a golden case, or a monitor. That is how an AI demo becomes an AI application.</p>
+    </section>
+
+    <!-- 21 · Section 4 divider -->
+    <section class="slide section">
+      <span class="ghost">4</span>
+      <div class="secrow">
+        <div class="secnum">4</div>
+        <div class="secdiv"></div>
+        <div class="secmeta">
+          <p class="eyebrow">Section</p>
+          <h1>Observability — Logfire</h1>
+          <div class="sub">tests catch bugs before deploy; tracing catches them after</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 22 · 12.16 -->
+    <section class="slide">
+      <p class="eyebrow">12.16 · Two lines</p>
+      <h1 class="h">Logfire — trace every agent run</h1>
+      <pre class="code"><code class="py">import logfire
+logfire.configure(send_to_logfire=False)   # local console, no token
+logfire.instrument_pydantic_ai()           # auto-trace every run_sync()</code></pre>
+      <p class="lead" style="margin-top:16px">Every agent run now prints a nested trace — which tools, in what order, how long, what failed:</p>
+      <pre class="code" data-lang="text"><code>catalog_agent run
+  chat function:model_fn:
+  running tool: count_by_category        ← same data as capture_run_messages()
+  chat function:model_fn:</code></pre>
+      <p class="lead soft" style="margin-top:12px">Same information you assert on in tests — but for production, in real time. Add your own detail with <code class="inl">logfire.info("searching", term=term)</code> or <code class="inl">with logfire.span("catalog_search"):</code> inside tools.</p>
+    </section>
+
+    <!-- 23 · 12.17 -->
+    <section class="slide">
+      <p class="eyebrow">12.17 · Ship it</p>
+      <h1 class="h">From console to dashboard</h1>
+      <pre class="code"><code class="py">logfire.configure()                        # drop send_to_logfire=False -> sends to logfire.pydantic.dev
+logfire.instrument_pydantic_ai()</code></pre>
+      <p class="lead" style="margin-top:18px">Set <code class="inl">LOGFIRE_TOKEN</code> — traces flow to the Logfire dashboard. Filter by agent name, tool name, latency. Set alerts on error rates or runaway tool-call counts.</p>
+      <p class="lead"><strong>The pattern:</strong> tests catch bugs before deploy; Logfire catches them after. Same agent, same tools — the observability layer wraps around what you already built. Every bug becomes either a test, a golden case, or a monitor.</p>
+      <div class="along"><span class="play">▶</span><div>Code-along now → notebook: module-12 Logfire cell — <b>two lines</b>, then watch the trace</div></div>
+    </section>
+
+    <!-- 24 · LAB -->
+    <section class="slide lab">
+      <span class="labtag">🧪 LAB 12 · 80 MIN</span>
+      <h1>Test the Agent ⭐</h1>
+      <p class="lead">Open <code class="inl">labs/lab-12-test-the-agent.md</code></p>
+      <p class="lead" style="margin-bottom:14px">You'll write:</p>
+      <ul class="clean">
+        <li><b>Tool tests</b> (deterministic Python via <code class="inl">FunctionModel</code>)</li>
+        <li><b>Schema tests</b> (Pydantic validation)</li>
+        <li><b>Loop tests</b> with <code class="inl">FunctionModel</code> + <code class="inl">capture_run_messages</code></li>
+        <li><b>Golden evals</b> from <code class="inl">tests/evals/golden_queries.json</code> (<code class="inl">@pytest.mark.eval</code>)</li>
+      </ul>
+      <div class="endstate">End state: <code>uv run pytest -q</code> green, <b>no OPENAI_API_KEY needed</b>, ~20 tests.</div>
+    </section>
+
+    <!-- 25 · End of Day 4 -->
+    <section class="slide title">
+      <span class="tglow"></span>
+      <p class="kicker">End of Day 4</p>
+      <h1><span class="grad">Done.</span></h1>
+      <h2>One project. Four days. <b>Tested. Agentic. Observable.</b></h2>
+      <p class="metaline"><b>Python catalog</b> + dataclasses + Pydantic + pytest + CI + LLM agent + agent tests + Logfire</p>
+    </section>
+
+    <!-- 26 · Where to next -->
+    <section class="slide">
+      <p class="eyebrow">Where to next</p>
+      <h1 class="h">Take the patterns home</h1>
+      <ul class="clean">
+        <li>Swap OpenAI for Anthropic / Azure / a local model — <b>change the model string</b>, same tools</li>
+        <li>Climb the M10 ladder for real: few-shot → RAG when the catalog outgrows the context window</li>
+        <li>Add memory: persist <code class="inl">messages</code> per <code class="inl">session_id</code></li>
+        <li>Fine-tune <code class="inl">parse_nl_query</code> once volume justifies it — you already have the eval</li>
+        <li>Connect Logfire to your dashboard — <code class="inl">logfire.configure()</code> + <code class="inl">LOGFIRE_TOKEN</code>, same two lines</li>
+        <li><strong>Every pattern works on your real production code</strong></li>
+      </ul>
+    </section>
+
+    <!-- chrome injected per-slide by JS: progress + footer -->
+  </div>
+</div>
+
+<div class="nav">
+  <button id="prev" aria-label="Previous slide">◀</button>
+  <span class="count" id="count">1 / 26</span>
+  <button id="next" aria-label="Next slide">▶</button>
+</div>
+<div class="hint">← → to navigate</div>
+
+<script>
+(function(){
+  "use strict";
+  const stage = document.querySelector('.stage');
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const N = slides.length;
+  const countEl = document.getElementById('count');
+
+  // add progress bar + footer to each slide
+  slides.forEach((s, k)=>{
+    const p = document.createElement('div'); p.className='prog';
+    const f = document.createElement('div'); f.className='foot';
+    f.innerHTML = '<span class="brand"><span class="dot"></span>Acuity · Day 4 · Module 12 — Testing AI</span>'
+                + '<span>'+String(k+1).padStart(2,'0')+' / '+String(N).padStart(2,'0')+'</span>';
+    s.appendChild(p); s.appendChild(f);
+    p.style.width = ((k+1)/N*100)+'%';
+  });
+
+  // ---- fit stage to viewport ----
+  function fit(){
+    const pad = 24;
+    const s = Math.min((window.innerWidth-pad*2)/1280, (window.innerHeight-pad*2-40)/720);
+    stage.style.transform = 'translate(-50%,-50%) scale('+s+')';
+  }
+  window.addEventListener('resize', fit); fit();
+
+  // ---- navigation ----
+  let i = 0;
+  function show(n){
+    i = Math.max(0, Math.min(N-1, n));
+    slides.forEach((s,k)=>s.classList.toggle('active', k===i));
+    countEl.textContent = (i+1)+' / '+N;
+    location.hash = i+1;
+  }
+  function next(){ show(i+1); }
+  function prev(){ show(i-1); }
+
+  document.getElementById('next').addEventListener('click', next);
+  document.getElementById('prev').addEventListener('click', prev);
+  window.addEventListener('keydown', e=>{
+    if(['ArrowRight','PageDown',' '].includes(e.key)){ e.preventDefault(); next(); }
+    else if(['ArrowLeft','PageUp'].includes(e.key)){ e.preventDefault(); prev(); }
+    else if(e.key==='Home'){ e.preventDefault(); show(0); }
+    else if(e.key==='End'){ e.preventDefault(); show(N-1); }
+  });
+  const start = parseInt(location.hash.replace('#',''),10);
+  if(start>=1 && start<=N) i = start-1;
+
+  // ---- minimal Python syntax highlighter (self-contained, CSP-safe) ----
+  const KW = new Set(['def','return','if','elif','else','for','while','in','not','and','or',
+    'import','from','as','try','except','finally','raise','with','class','lambda','pass',
+    'break','continue','is','yield','global','nonlocal','assert','del','await','async']);
+  const CON = new Set(['True','False','None']);
+  const BI = new Set(['print','type','len','sum','range','enumerate','isinstance','open','list',
+    'dict','set','tuple','int','float','str','bool','round','dir','sorted','map','filter','zip',
+    'LookupError','ValueError','KeyError','TypeError',
+    'pipeline','BaseModel','Field','Agent','RunContext','TestModel','FunctionModel',
+    'capture_run_messages','ValidationError']);
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const TOK = /(#.*$)|((?:[fFrRbB]{0,2})(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'))|(\b\d+\.?\d*\b)|([A-Za-z_]\w*)/gm;
+
+  document.querySelectorAll('pre.code code').forEach(block=>{
+    const src = block.textContent;
+    let out='', last=0, m;
+    TOK.lastIndex = 0;
+    while((m = TOK.exec(src))){
+      out += esc(src.slice(last, m.index));
+      if(m[1])       out += '<span class="t-com">'+esc(m[1])+'</span>';
+      else if(m[2])  out += '<span class="t-str">'+esc(m[2])+'</span>';
+      else if(m[3])  out += '<span class="t-num">'+esc(m[3])+'</span>';
+      else if(m[4]){
+        const w = m[4];
+        const cls = KW.has(w)?'t-kw':CON.has(w)?'t-con':BI.has(w)?'t-bi':null;
+        out += cls ? '<span class="'+cls+'">'+esc(w)+'</span>' : esc(w);
+      }
+      last = m.index + m[0].length;
+    }
+    out += esc(src.slice(last));
+    block.innerHTML = out;
+  });
+
+  show(i);
+})();
+</script>

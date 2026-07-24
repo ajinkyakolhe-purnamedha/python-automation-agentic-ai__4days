@@ -22,7 +22,7 @@ You have a tested, CI-green catalog with a typed client. Today you bolt an **LLM
 - **M11** — tools = functions; the plan→act→observe loop
 - **M12** ⭐ — test the AI: shape & behaviour, not prose
 
-The agent's tools **are** the `APIClient` you built Day 2. The LLM is injected like the `Session` was Day 3.
+The agent's tools wrap the `ProductCatalog` you built Day 1. The catalog is injected like `Session` was Day 3.
 
 Catch-up: `cp -r ../project/checkpoints/day-4-start/. .`
 ---
@@ -58,12 +58,10 @@ one API call, many tasks
 ---
 # 1.1 · AI → ML → GenAI → Agentic
 
-```text
-AI           any system that "appears intelligent"
-ML           systems that learn patterns from data
-GenAI        ML that produces novel text / images / code
-Agentic AI   GenAI + tools + a loop + a goal
-```
+- **AI** — any system that "appears intelligent"
+- **ML** — systems that learn patterns from data
+- **GenAI** — ML that produces novel text / images / code
+- **Agentic AI** — GenAI + tools + a loop + a goal
 
 The **agent is the loop around the LLM**, not the LLM itself. The LLM is a stateless string-to-string machine; the state — **tools, memory, goals — lives in *your* code.** That's why Day 1–3 Python matters: you write the loop.
 ---
@@ -114,9 +112,13 @@ Same `create()` shape, different content parts. The task-engine idea is unchange
 Closed-source isn't one company. Google's **Gemini** API has the **same request shape**: a model id, a list of messages, a structured response.
 
 ```python
-# conceptually identical — swap the client + model id, keep the pattern
-client = genai_client(...)
-client.chat(model="gemini-1.5-flash", messages=[...])
+from google import genai
+client = genai.Client()                          # GOOGLE_API_KEY in env
+resp = client.models.generate_content(
+    model="gemini-2.0-flash",
+    contents="Classify this ticket: my screen is cracked",
+)
+resp.text                                        # -> "hardware"
 ```
 
 We use **OpenAI** for the rest of the course (M11/M12 agent). Point: the *pattern* is portable; vendors are swappable. Don't marry your code to one.
@@ -218,20 +220,29 @@ resp = client.chat.completions.create(model="gpt-4o-mini", messages=[...],
 
 `Field(description=...)` is the spec the model reads. **Make the LLM speak your schema.**
 ---
-# 3.3 · Always validate the output
+# 3.3 · 🔮 What happens when the LLM returns `{"max_price": -5}`?
+
+Pause. The LLM filled every field — valid JSON, correct types. But `max_price` is **negative**.
+
+Does your code catch this? Where?
+
+---
+# 3.4 · Always validate the output
 
 The LLM *promised* JSON in your shape — don't take its word. Parse through Pydantic, exactly like a request body Day 2:
 
 ```python
 raw = resp.choices[0].message.content
-query = CatalogQuery.model_validate_json(raw)   # raises on bad shape
+query = CatalogQuery.model_validate_json(raw)   # raises on bad shape AND bad values
 ```
+
+`Field(ge=0)` on `max_price` rejects `-5` — **the same constraint you wrote 5 minutes ago.** Pydantic is the guardrail for the LLM, not just the API.
 
 Same **boundary discipline** as Day 2: the LLM is just another **untrusted source**. Validate at the edge; the rest of your code gets a clean, typed object.
 
-<div class="code-along">▶ Code-along now → notebook: module-10 §3 — extract a TicketQuery in JSON mode, then validate it</div>
+<div class="code-along">▶ Code-along now → notebook: module-10 §3 — extract a TicketQuery in JSON mode, then validate it. Try removing `ge=0` — watch what gets through.</div>
 ---
-# 3.4 · When the output isn't good enough — the ladder
+# 3.5 · When the output isn't good enough — the ladder
 
 Climb **only as far as the task needs:**
 
@@ -243,7 +254,7 @@ Climb **only as far as the task needs:**
 
 Most tasks never leave rung 1. Fine-tuning teaches a **skill / format**, not facts — and the held-out check it needs **is the golden-eval you build in M12.** *(Shown, not run today.)*
 ---
-# 3.5 · Responsible AI — the minimum
+# 3.6 · Responsible AI — the minimum
 
 - **PII** — don't send personal data to a third-party LLM without consent + a DPA (this is also a reason to reach for §2's local models)
 - **Hallucination** — the model can invent numbers; **verify with a tool before acting**
@@ -251,9 +262,9 @@ Most tasks never leave rung 1. Fine-tuning teaches a **skill / format**, not fac
 
 Not a course on responsible AI — but your boss *will* ask these three.
 ---
-# 3.6 · → M11: the LLM becomes an agent
+# 3.7 · → M11: the LLM becomes an agent
 
-Today: **one call**, structured + validated. Next module: wrap it in a **loop** and give it **tools** (your Day-2 `APIClient`).
+Today: **one call**, structured + validated. Next module: wrap it in a **loop** and give it **tools** (your `ProductCatalog`).
 
 ```text
 §3 today         one validated call:  text -> CatalogQuery
@@ -266,13 +277,13 @@ The validation discipline you just learned is what keeps the loop trustworthy.
 
 # 🧪 Lab 10 — Classify a Product, then NL → Filter
 
-**80 min** · open `labs/lab-10-nl-query-filter/README.md`
+**80 min** · open `modules/m10-llm-structured/lab/README.md`
 
 **Part A — open-source (≈20 min):** zero-shot classify a `Product` from its name + description with a local `transformers` pipeline; compare the guess to the real category.
 
 **Part B — your first LLM app (≈60 min):** on your `Product` catalog
 - `CatalogQuery` — Pydantic schema with `Field(description=...)`
 - `parse_nl_query(prompt)` — one LLM call, JSON mode, Pydantic validation
-- `apply_query(query, api)` — pure-Python filter over the `APIClient`
+- `apply_query(query, catalog)` — pure-Python filter over the `ProductCatalog`
 
 End state: typing **"electronics under 5000 in stock"** returns the right rows.
