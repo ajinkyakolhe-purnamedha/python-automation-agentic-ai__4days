@@ -1,0 +1,22 @@
+# Virtual environment
+.venv/
+
+# Python caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Mutation-testing state (notebook 10)
+.mutmut-cache
+mutants/
+
+# Files the notebooks GENERATE at run time via `%%writefile` — recreated on every
+# run, so they don't belong in version control. The notebooks are the source of truth.
+nb[0-9][0-9]_*.py
+test_nb[0-9][0-9]*.py
+nb09_page.html
+nb10/
+__snapshots__/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
